@@ -27,6 +27,7 @@ FILE * readFile(char * filename)
 {
     FILE *ifp, *ofp;
 
+    /*Use chaingang file from local directry*/
     if(strcmp(filename, "chaingang.txt") == 0)
     {
         ifp = fopen("chaingang.txt", "r");
@@ -38,27 +39,18 @@ FILE * readFile(char * filename)
         }
         return ifp;
     }
-
-    /*
-    char outputFilename[] = "chaingang.txt";
-
-    ifp = fopen("in.list", "r");
-
-    if (ifp == NULL)
+        /*Use user specified filename*/
+    else
     {
-        fprintf(stderr, "Can't open input file in.list!\n");
-        exit(1);
+        ifp = fopen(filename, "r");
+        if(ifp == NULL)
+        {
+            perror("Error while opening %s file.\n", filename);
+            help();
+            exit(-1);
+        }
+        return ifp;
     }
-
-    ofp = fopen(outputFilename, "w");
-
-    if (ofp == NULL)
-    {
-        fprintf(stderr, "Can't open output file %s!\n",
-                outputFilename);
-        exit(1);
-    }
-     */
 }
 
 char * getChainFileName(int argc, char *argv[])
@@ -109,10 +101,10 @@ char * getChainFileName(int argc, char *argv[])
     return url;
 }
 
-void printFileContents(FILE * chainfile)
+void printFileContents(FILE * file)
 {
     char c;
-    while((c = fgetc(chainfile) ) != EOF )
+    while((c = fgetc(file) ) != EOF )
     {
         printf("%c", c);
     }
