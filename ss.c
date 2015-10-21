@@ -105,10 +105,10 @@ void client(){
 }
 
 char* getNextSteppingStone(){
-	FILE *ifp = fopen("host_list.txt", "r");
+	FILE *ifp = fopen("chainlist.txt", "r");
 
 	if (ifp == NULL) {
-		perror("Can't open file host_list.txt");
+		perror("Can't open file chainlist.txt");
 		exit(-1);
 	}
 	int lines = 0;
@@ -116,10 +116,8 @@ char* getNextSteppingStone(){
 
 	/* Need to get a line count first to properly call rand() */
 	while (fgets(line_holder, 100, ifp)) {
-		lines++;
+
 	}
-	free(line_holder);
-	fclose(ifp);
 	if(lines == 1) return NULL;
 
 	if(DEBUG) printf("Calling removeCurrentHost()\n");
@@ -145,8 +143,8 @@ char* getNextSteppingStone(){
 void removeCurrentHost(){
 
 	char* ip = getCurrentIP();
-	FILE *ifp = fopen("host_list.txt", "r");
-	FILE *ofp = fopen("host_list.txt.new", "w");
+	FILE *ifp = fopen("chainlist.txt", "r");
+	FILE *ofp = fopen("chainlist.txt.new", "w");
 	char* line = calloc(100, sizeof(char));
 	char* compIP;
 
@@ -163,7 +161,7 @@ void removeCurrentHost(){
 	}
 	fclose(ifp);
 	fclose(ofp);
-	rename("host_list.txt.new", "host_list.txt");
+	rename("chainlist.txt.new", "chainlist.txt");
 
 }
 

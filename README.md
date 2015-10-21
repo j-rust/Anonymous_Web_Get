@@ -1,6 +1,6 @@
 # Anonymous_Web_Get
 
-It is assumed the file containing all possible hosts has one host and port per line,
+It is assumed the file containing all possible stepping stones (chainlist.txt) has one host and port per line,
 with the the host and port delimited by one tab character.
 i.e.:
 129.82.45.59	20000
