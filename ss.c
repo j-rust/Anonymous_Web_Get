@@ -13,11 +13,16 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <getopt.h>
 #include <signal.h>
+#include <time.h>
 
+#define DEBUG 1
 
 void server(unsigned short port){
+	if(DEBUG) {
+		printf("Calling client()\n");
+		client();
+	}
 	int status, sockfd, clientfd, listen_success;
 	struct sockaddr_in server;
 	struct sockaddr_storage their_addr;
@@ -52,11 +57,8 @@ void server(unsigned short port){
 	socklen_t socklen = sizeof(sockin);
 	getsockname(sockfd, (struct sockaddr *) &sockin, &socklen);
 
-	char Buf [ 200 ] ;
-	struct hostent * Host = (struct hostent * ) malloc ( sizeof ( struct hostent ));
-	gethostname ( Buf , 200 ) ;
-	Host = ( struct hostent * ) gethostbyname ( Buf ) ;
-	printf("%s %d\n", inet_ntoa(*((struct in_addr *)Host->h_addr)), ntohs(sockin.sin_port));
+
+	printf("%s %d\n", getCurrentIP(), ntohs(sockin.sin_port));
 
 	addr_size = sizeof(their_addr);
 	int byte_count;
@@ -66,7 +68,11 @@ void server(unsigned short port){
 
 void client(){
 
+	if(DEBUG) printf("Calling getNextSteppingStone()\n");
 	char* next_ss_info = getNextSteppingStone();
+	if(DEBUG){
+		exit(0);
+	}
 	if(next_ss_info == NULL){
 		// call wget and send the file down the chain
 	}
@@ -99,10 +105,84 @@ void client(){
 }
 
 char* getNextSteppingStone(){
-	FILE *fp;
+	FILE *ifp = fopen("host_list.txt", "r");
+
+	if (ifp == NULL) {
+		perror("Can't open file host_list.txt");
+		exit(-1);
+	}
+	int lines = 0;
+	char* line_holder = calloc(100, sizeof(char));
+
+	/* Need to get a line count first to properly call rand() */
+	while (fgets(line_holder, 100, ifp)) {
+		lines++;
+	}
+	free(line_holder);
+	fclose(ifp);
+	if(lines == 1) return NULL;
+
+	if(DEBUG) printf("Calling removeCurrentHost()\n");
+	removeCurrentHost();
+	lines--;
+
+	time_t t;
+	int next_host; /* line containg info for the next stepping stone */
+
+	srand((unsigned) time(&t));
+	/* Generate 100 random numbers to increase randomness -> probably not necessary */
+	int i = 0;
+	for (i; i < 100; i++) {
+		next_host = rand() % (lines - 1);
+	}
+
+
+
 	return NULL;
 
 }
+
+void removeCurrentHost(){
+
+	char* ip = getCurrentIP();
+	FILE *ifp = fopen("host_list.txt", "r");
+	FILE *ofp = fopen("host_list.txt.new", "w");
+	char* line = calloc(100, sizeof(char));
+	char* compIP;
+
+	while (fgets(line, 100, ifp)) {
+		if(DEBUG) printf("Calling parseIP()\n");
+		compIP = parseIP(line);
+		if(DEBUG) printf("DEBUG - Parsed IP address and got %s\n", compIP);
+		/* Only write to the new file if it's not the current IP address */
+		printf("Compared %s to %s and got %d\n", compIP, ip, strcmp(ip, compIP));
+		if(strcmp(ip, compIP) != 0) {
+			fprintf(ofp, line);
+			fprintf(ofp, "\n");
+		}
+	}
+	fclose(ifp);
+	fclose(ofp);
+	rename("host_list.txt.new", "host_list.txt");
+
+}
+
+char* getCurrentIP(){
+	char Buf [ 200 ] ;
+	struct hostent * Host = (struct hostent * ) malloc ( sizeof ( struct hostent ));
+	gethostname ( Buf , 200 );
+	Host = ( struct hostent * ) gethostbyname ( Buf );
+	printf("%s\n", inet_ntoa(*((struct in_addr *)Host->h_addr)));
+
+	return inet_ntoa(*((struct in_addr *)Host->h_addr));
+}
+
+char* parseIP(char* line){
+	char* tmp;
+	tmp = strtok(line, "\t");
+	return tmp;
+}
+
 
 
 

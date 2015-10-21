@@ -24,5 +24,21 @@ void client();
  */
 char* getNextSteppingStone();
 
+/**
+ * Removes the current host from host_list.txt
+ */
+void removeCurrentHost();
+
+/**
+ * @return - The IP address of the local machine
+ */
+char* getCurrentIP();
+
+/*
+ * Parses the IP address from a line matching the format of host_list.txt
+ * @return - An IP address
+ */
+char* parseIP(char *line);
+
 
 #endif //ANONYMOUS_WEB_GET_SS_H
