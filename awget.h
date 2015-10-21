@@ -5,6 +5,8 @@
 #ifndef ANONYMOUS_WEB_GET_AWGET_H
 #define ANONYMOUS_WEB_GET_AWGET_H
 
+#include <stdio.h>
+
 /**
  * @args file - the file that you want the contents of printed to the terminal.
  * This is used only for debugging.

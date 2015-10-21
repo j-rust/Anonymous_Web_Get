@@ -33,7 +33,7 @@ FILE * readFile(char * filename)
         ifp = fopen("chaingang.txt", "r");
         if(ifp == NULL)
         {
-            perror("Error while opening the chaingang.txt file.\n");
+            printf("Error while opening the chaingang.txt file.\n");
             help();
             exit(-1);
         }
@@ -45,7 +45,7 @@ FILE * readFile(char * filename)
         ifp = fopen(filename, "r");
         if(ifp == NULL)
         {
-            perror("Error while opening %s file.\n", filename);
+            printf("Error while opening %s file.\n", filename);
             help();
             exit(-1);
         }
