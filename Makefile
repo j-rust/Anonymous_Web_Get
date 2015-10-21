@@ -11,8 +11,11 @@ all:	ss awget
 ss:	ss.c ss.h
 	$(CC) -g -o ss ss.c
 
+awget:	awget.c awget.h
+	$(CC) -g -o awget awget.c
+
 target:
-	tar cf project2.tar ss.c ss.h Makefile README.md
+	tar cf project2.tar ss.c ss.h awget.c awget.h Makefile README.md
 
 clean:
 	rm ss awget project2.tar *.o
