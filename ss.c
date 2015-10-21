@@ -111,27 +111,28 @@ char* getNextSteppingStone(){
 		perror("Can't open file chainlist.txt");
 		exit(-1);
 	}
-	int lines = 0;
 	char* line_holder = calloc(100, sizeof(char));
+	char c = NULL;
+	int num_ss;
 
-	/* Need to get a line count first to properly call rand() */
-	while (fgets(line_holder, 100, ifp)) {
+	c = fgetc(ifp);
+	num_ss = c - '0';
+	fclose(ifp);
+	if(num_ss == 1) return NULL;
 
-	}
-	if(lines == 1) return NULL;
-
+	num_ss--;
+	if(DEBUG) printf("Expecting %d to be written at top of the file\n", num_ss);
 	if(DEBUG) printf("Calling removeCurrentHost()\n");
-	removeCurrentHost();
-	lines--;
+	removeCurrentHost(num_ss);
 
 	time_t t;
-	int next_host; /* line containg info for the next stepping stone */
+	int next_ss; /* line containg info for the next stepping stone */
 
 	srand((unsigned) time(&t));
 	/* Generate 100 random numbers to increase randomness -> probably not necessary */
 	int i = 0;
 	for (i; i < 100; i++) {
-		next_host = rand() % (lines - 1);
+		next_ss = rand() % (num_ss);
 	}
 
 
@@ -140,24 +141,32 @@ char* getNextSteppingStone(){
 
 }
 
-void removeCurrentHost(){
+void removeCurrentHost(int num_ss){
 
 	char* ip = getCurrentIP();
 	FILE *ifp = fopen("chainlist.txt", "r");
 	FILE *ofp = fopen("chainlist.txt.new", "w");
-	char* line = calloc(100, sizeof(char));
+	char* line = calloc(30, sizeof(char));
+	char *backup_line = calloc(30, sizeof(char));
 	char* compIP;
 
-	while (fgets(line, 100, ifp)) {
-		if(DEBUG) printf("Calling parseIP()\n");
+
+	fgets(line, 30, ifp);
+	if(DEBUG) printf("Read first line and got %s", line);
+
+	fprintf(ofp, "%d\n", num_ss);
+
+	while (fgets(line, 30, ifp)) {
+		memcpy(backup_line, line, 30);
+		if(DEBUG) printf("Created backup line, got %s", backup_line);
 		compIP = parseIP(line);
-		if(DEBUG) printf("DEBUG - Parsed IP address and got %s\n", compIP);
 		/* Only write to the new file if it's not the current IP address */
 		printf("Compared %s to %s and got %d\n", compIP, ip, strcmp(ip, compIP));
-		if(strcmp(ip, compIP) != 0) {
-			fprintf(ofp, line);
-			fprintf(ofp, "\n");
+		if (strcmp(ip, compIP) != 0) {
+			fprintf(ofp, "%s", backup_line);
 		}
+		memset(line, 0, 30);
+		memset(backup_line, 0, 30);
 	}
 	fclose(ifp);
 	fclose(ofp);
@@ -170,7 +179,6 @@ char* getCurrentIP(){
 	struct hostent * Host = (struct hostent * ) malloc ( sizeof ( struct hostent ));
 	gethostname ( Buf , 200 );
 	Host = ( struct hostent * ) gethostbyname ( Buf );
-	printf("%s\n", inet_ntoa(*((struct in_addr *)Host->h_addr)));
 
 	return inet_ntoa(*((struct in_addr *)Host->h_addr));
 }
