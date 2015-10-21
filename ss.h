@@ -27,7 +27,7 @@ char* getNextSteppingStone();
 /**
  * Removes the current host from host_list.txt
  */
-void removeCurrentHost();
+void removeCurrentHost(int num_ss);
 
 /**
  * @return - The IP address of the local machine
