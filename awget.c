@@ -108,7 +108,109 @@ void printFileContents(FILE * file)
     {
         printf("%c", c);
     }
+    rewind(file);
     printf("\n");
+}
+
+/*
+void sendFileToRandomSS()
+{
+    if(DEBUG) printf("Calling sendFileToRandomSS\n");
+    char* next_ss_info = getNextSteppingStone();
+    if(DEBUG){
+        exit(0);
+    }
+    if(next_ss_info == NULL){
+        // call wget and send the file down the chain
+    }
+
+    int sockfd, status, connect_status;
+    struct sockaddr_in serv_addr;
+    struct addrinfo hints;
+    struct addrinfo *servinfo;
+    char* ip = NULL;
+    char* port = NULL;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+
+    if ((status = getaddrinfo(ip, port, &hints, &servinfo)) != 0) {
+        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
+        exit(1);
+    }
+
+    sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+
+    connect_status = connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
+    if(connect_status < 0){
+        perror("Error trying to connect\n");
+        return;
+    }
+
+}
+*/
+
+
+int generateRandomNumber()
+{
+    time_t t;
+    srand((unsigned) time(&t));
+    return rand();
+}
+
+char* getRandomSS(FILE * filename)
+{
+    char* contentsOfLine = calloc(100, sizeof(char));
+    int numberOfLinesInFile = 0;
+    int lineCounter = 0;
+    char ch;
+    int positionOfCharInLine = 0;
+    int randomNumber = 0;
+
+    /*Get the characters on the first line of the file which will be the number of lines in the file*/
+    while((ch = fgetc(filename) ) != '\n' )
+    {
+        if(ch != '\n')
+        {
+            contentsOfLine[positionOfCharInLine] = ch;
+        }
+        else
+        {
+            break;
+        }
+        positionOfCharInLine++;
+    }
+
+    numberOfLinesInFile = atoi(contentsOfLine);
+    randomNumber = (generateRandomNumber() % numberOfLinesInFile) + 1;
+    positionOfCharInLine = 0;
+
+    if(randomNumber == numberOfLinesInFile)
+    {
+        randomNumber = randomNumber - 1;
+    }
+
+
+    do
+    {
+        if(ch == '\n' && lineCounter == randomNumber)
+        {
+            return contentsOfLine;
+        }
+        else if(ch == '\n')
+        {
+            lineCounter++;
+            memset(contentsOfLine, 0, sizeof(contentsOfLine));
+            positionOfCharInLine = 0;
+        }
+        else
+        {
+            contentsOfLine[positionOfCharInLine] = ch;
+            positionOfCharInLine++;
+        }
+    }while((ch = fgetc(filename) ) != EOF );
 }
 
 int main(int argc, char **argv)
@@ -146,6 +248,7 @@ int main(int argc, char **argv)
 
     if(DEBUG) printFileContents(chaingangFile);
 
+   if(DEBUG) printf("Random line is: %s\n", getRandomSS(chaingangFile));
 
     return 0;
 }
