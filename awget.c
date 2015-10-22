@@ -170,11 +170,12 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
         perror("Error trying to connect\n");
         return;
     }
-    printFileContents(file);
 
 
 
     uint32_t fileLength = getFileLength(file);
+
+    printf("File length: %u\n", fileLength);
 
 
     ///////////////// check size //////////////
@@ -366,7 +367,6 @@ char* getRandomSS(FILE * filename)
     while (fgets(line, 30, filename)) {
         if(lineCounter == randomNumber) {
             if(DEBUG) printf("Found the line to return\n");
-            fclose(filename);
             return line;
         }
         lineCounter++;
