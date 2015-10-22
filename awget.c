@@ -118,6 +118,12 @@ char * getPort(char * line)
     char* tmp;
     tmp = strtok(line, "\t");
     tmp = strtok(NULL, "\t");
+    int len = strlen(tmp);
+    int current = 0;
+    while (current < len) {
+        if(tmp[current] == '\n') tmp[current] = '\0';
+        current++;
+    }
     return tmp;
 }
 
@@ -164,7 +170,7 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
         perror("Error trying to connect\n");
         return;
     }
-
+    printFileContents(file);
 
 
 
@@ -326,10 +332,12 @@ char* getRandomSS(FILE * filename)
 {
     char* contentsOfLine = calloc(100, sizeof(char));
     int numberOfLinesInFile = 0;
-    int lineCounter = 0;
+    int lineCounter = 1;
     char ch;
     int positionOfCharInLine = 0;
     int randomNumber = 0;
+
+    char* line = calloc(30, sizeof(char));
 
     /*Get the characters on the first line of the file which will be the number of lines in the file*/
     while((ch = fgetc(filename) ) != '\n' )
@@ -349,29 +357,21 @@ char* getRandomSS(FILE * filename)
     randomNumber = (generateRandomNumber() % numberOfLinesInFile) + 1;
     positionOfCharInLine = 0;
 
-    if(randomNumber == numberOfLinesInFile)
-    {
-        randomNumber = randomNumber - 1;
-    }
+//    if(randomNumber == numberOfLinesInFile)
+//    {
+//        randomNumber = randomNumber - 1;
+//    }
 
-    do
-    {
-        if(ch == '\n' && lineCounter == randomNumber)
-        {
-            return contentsOfLine;
+
+    while (fgets(line, 30, filename)) {
+        if(lineCounter == randomNumber) {
+            if(DEBUG) printf("Found the line to return\n");
+            fclose(filename);
+            return line;
         }
-        else if(ch == '\n')
-        {
-            lineCounter++;
-            memset(contentsOfLine, 0, sizeof(contentsOfLine));
-            positionOfCharInLine = 0;
-        }
-        else
-        {
-            contentsOfLine[positionOfCharInLine] = ch;
-            positionOfCharInLine++;
-        }
-    }while((ch = fgetc(filename) ) != EOF );
+        lineCounter++;
+        memset(line, 0, 30);
+    }
 }
 
 int main(int argc, char **argv)
@@ -416,10 +416,11 @@ int main(int argc, char **argv)
     memcpy(tmpLine, firstSS, strlen(firstSS));
     char * firstSSPort = getPort(tmpLine);
 
-    //if(DEBUG) printf("IP is %s, port is %s\n", firstSSIP, firstSSPort);
+    if(DEBUG) printf("%s %s\n", firstSSIP, firstSSPort);
+    if(DEBUG) printf("Size of port %u\n", strlen(firstSSPort));
 
     //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
-    sendFileToRandomSS("129.82.46.226", "42360", chaingangFile);
+    sendFileToRandomSS(firstSSIP, firstSSPort, chaingangFile);
 
     //printf("File size is %d\n", getFileLength(chaingangFile));
 

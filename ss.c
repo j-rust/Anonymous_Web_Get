@@ -129,15 +129,17 @@ void server(unsigned short port){
 	}
 	fclose(ofp);
 
-//	char* next_ss = getNextSteppingStone();
-//	if (next_ss == NULL) {
+	char* next_ss = getNextSteppingStone();
+	if (next_ss == NULL) {
 //		char cmd_buf[1024];
 //		snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -o download_file", url);
 //		system(cmd_buf);
-//
-//	} else {
-//		client(next_ss, url);
-//	}
+		printf("If this was functional, I would call wget!\n");
+
+	} else {
+		char *url = "place_holder";
+		client(next_ss, url);
+	}
 
 }
 
@@ -196,7 +198,7 @@ char* getNextSteppingStone(){
 	num_ss--;
 	removeCurrentHost(num_ss);
 
-	return getRandomSS("chainlist.txt");
+	return getRandomSS();
 
 }
 
@@ -229,7 +231,6 @@ void removeCurrentHost(int num_ss){
 	fclose(ifp);
 	fclose(ofp);
 	rename("chainlist.txt.new", "chainlist.txt");
-
 }
 
 char* getCurrentIP(){
@@ -275,7 +276,7 @@ char* getRandomSS()
 	ifp = fopen("chainlist.txt", "r");
 	char* contentsOfLine = calloc(100, sizeof(char));
 	int numberOfLinesInFile = 0;
-	int lineCounter = 0;
+	int lineCounter = 1;
 	char ch;
 	int positionOfCharInLine = 0;
 	int randomNumber = 0;
@@ -298,27 +299,17 @@ char* getRandomSS()
 	randomNumber = (generateRandomNumber(numberOfLinesInFile)) + 1;
 	positionOfCharInLine = 0;
 
-	if(randomNumber == numberOfLinesInFile) randomNumber = randomNumber - 1;
+//	if(randomNumber == numberOfLinesInFile) randomNumber = randomNumber - 1;
 
-
-	do
-	{
-		if(ch == '\n' && lineCounter == randomNumber)
-		{
-			return contentsOfLine;
+	char* line = calloc(30, sizeof(char));
+	while (fgets(line, 30, ifp)) {
+		if(lineCounter == randomNumber) {
+			fclose(ifp);
+			return line;
 		}
-		else if(ch == '\n')
-		{
-			lineCounter++;
-			memset(contentsOfLine, 0, sizeof(contentsOfLine));
-			positionOfCharInLine = 0;
-		}
-		else
-		{
-			contentsOfLine[positionOfCharInLine] = ch;
-			positionOfCharInLine++;
-		}
-	}while((ch = fgetc(ifp) ) != EOF );
+		lineCounter++;
+		memset(line, 0, 30);
+	}
 
 }
 
