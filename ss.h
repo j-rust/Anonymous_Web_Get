@@ -5,6 +5,8 @@
 #ifndef ANONYMOUS_WEB_GET_SS_H
 #define ANONYMOUS_WEB_GET_SS_H
 
+#include <stdio.h>
+
 /**
  * @args port - Port to connect to. If no port is passed as a command line
  * argument, 0 will be passed.
@@ -34,11 +36,19 @@ void removeCurrentHost(int num_ss);
  */
 char* getCurrentIP();
 
+
 /*
  * Parses the IP address from a line matching the format of host_list.txt
  * @return - An IP address
  */
 char* parseIP(char *line);
+
+char* parsePort(char* line);
+
+int generateRandomNumber(int num_ss);
+
+char* getRandomSS();
+
 
 
 #endif //ANONYMOUS_WEB_GET_SS_H

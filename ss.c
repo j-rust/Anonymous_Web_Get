@@ -68,21 +68,27 @@ void server(unsigned short port){
 
 void client(){
 
-	if(DEBUG) printf("Calling getNextSteppingStone()\n");
 	char* next_ss_info = getNextSteppingStone();
-	if(DEBUG){
-		exit(0);
-	}
-	if(next_ss_info == NULL){
+
+	if(DEBUG) printf("Next SS is %s\n", next_ss_info);
+
+	if(next_ss_info == NULL) {
 		// call wget and send the file down the chain
 	}
+
+	char *mutable_info = calloc(strlen(next_ss_info), sizeof(char));
+	memcpy(mutable_info, next_ss_info, strlen(next_ss_info));
 
 	int sockfd, status, connect_status;
 	struct sockaddr_in serv_addr;
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
-	char* ip = NULL;
-	char* port = NULL;
+	char* ip = parseIP(mutable_info);
+	if(DEBUG) printf("Parsed IP address: %s\n", ip);
+	memset(mutable_info, 0, strlen(next_ss_info));
+	memcpy(mutable_info, next_ss_info, strlen(next_ss_info));
+	char *port = parsePort(mutable_info);
+	if(DEBUG) printf("Parsed port: %s\n", port);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -121,23 +127,9 @@ char* getNextSteppingStone(){
 	if(num_ss == 1) return NULL;
 
 	num_ss--;
-	if(DEBUG) printf("Expecting %d to be written at top of the file\n", num_ss);
-	if(DEBUG) printf("Calling removeCurrentHost()\n");
 	removeCurrentHost(num_ss);
 
-	time_t t;
-	int next_ss; /* line containg info for the next stepping stone */
-
-	srand((unsigned) time(&t));
-	/* Generate 100 random numbers to increase randomness -> probably not necessary */
-	int i = 0;
-	for (i; i < 100; i++) {
-		next_ss = rand() % (num_ss);
-	}
-
-
-
-	return NULL;
+	return getRandomSS("chainlist.txt");
 
 }
 
@@ -158,7 +150,6 @@ void removeCurrentHost(int num_ss){
 
 	while (fgets(line, 30, ifp)) {
 		memcpy(backup_line, line, 30);
-		if(DEBUG) printf("Created backup line, got %s", backup_line);
 		compIP = parseIP(line);
 		/* Only write to the new file if it's not the current IP address */
 		printf("Compared %s to %s and got %d\n", compIP, ip, strcmp(ip, compIP));
@@ -189,6 +180,80 @@ char* parseIP(char* line){
 	return tmp;
 }
 
+char* parsePort(char *line){
+	char* tmp;
+	if(DEBUG) printf("Received line %s\n", line);
+	tmp = strtok(line, "\t");
+	if(DEBUG) printf("First port token: %s\n", tmp);
+	tmp = strtok(NULL, "\t");
+	return tmp;
+}
+
+int generateRandomNumber(int num_ss)
+{
+	time_t t;
+	int next_ss; /* line containg info for the next stepping stone */
+	srand((unsigned) time(&t));
+	/* Generate 100 random numbers to increase randomness -> probably not necessary */
+	int i = 0;
+	for (i; i < 100; i++) {
+		next_ss = rand() % (num_ss);
+	}
+	return next_ss + 1;
+}
+
+char* getRandomSS()
+{
+	FILE *ifp;
+	ifp = fopen("chainlist.txt", "r");
+	char* contentsOfLine = calloc(100, sizeof(char));
+	int numberOfLinesInFile = 0;
+	int lineCounter = 0;
+	char ch;
+	int positionOfCharInLine = 0;
+	int randomNumber = 0;
+
+	/*Get the characters on the first line of the file which will be the number of lines in the file*/
+	while((ch = fgetc(ifp) ) != '\n' )
+	{
+		if(ch != '\n')
+		{
+			contentsOfLine[positionOfCharInLine] = ch;
+		}
+		else
+		{
+			break;
+		}
+		positionOfCharInLine++;
+	}
+
+	numberOfLinesInFile = atoi(contentsOfLine);
+	randomNumber = (generateRandomNumber(numberOfLinesInFile)) + 1;
+	positionOfCharInLine = 0;
+
+	if(randomNumber == numberOfLinesInFile) randomNumber = randomNumber - 1;
+
+
+	do
+	{
+		if(ch == '\n' && lineCounter == randomNumber)
+		{
+			return contentsOfLine;
+		}
+		else if(ch == '\n')
+		{
+			lineCounter++;
+			memset(contentsOfLine, 0, sizeof(contentsOfLine));
+			positionOfCharInLine = 0;
+		}
+		else
+		{
+			contentsOfLine[positionOfCharInLine] = ch;
+			positionOfCharInLine++;
+		}
+	}while((ch = fgetc(ifp) ) != EOF );
+
+}
 
 
 
