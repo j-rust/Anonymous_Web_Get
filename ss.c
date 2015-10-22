@@ -65,20 +65,22 @@ void server(unsigned short port){
 	printf("Accepted an incoming connection\n");
 
 	char *rec_buffer = calloc(500, sizeof(char));
-	uint32_t total_length;
-	uint32_t total_bytes_received = 500;
+	uint32_t total_length = 1000;
+	uint32_t total_bytes_received = 0;
 	char *data;
 	int recv_status;
 
 	/* First packet received is the url */
+	/*
 	recv_status = recv(clientfd, rec_buffer, 500, 0);
 	unsigned int msg_length;
 	memcpy(&msg_length, rec_buffer + 4, 2);
 	char *url = calloc(msg_length, sizeof(char));
 	memcpy(url, rec_buffer + 6, msg_length);
 	memset(rec_buffer, 0, strlen(rec_buffer));
+	*/
 
-
+	unsigned int msg_length;
 	FILE *ofp = fopen("chainlist.txt", "w");
 
 	while (total_bytes_received < total_length) {
@@ -109,7 +111,7 @@ void server(unsigned short port){
 	if (next_ss == NULL) {
 		// call wget and send back
 	} else {
-		client(next_ss, url);
+		//client(next_ss, url);
 	}
 
 }
