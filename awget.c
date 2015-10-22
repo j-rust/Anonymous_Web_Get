@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+
 #define DEBUG 1
 
 void help()
@@ -126,34 +127,35 @@ char* getIP(char* line){
     return tmp;
 }
 
-/*
-void sendFileToRandomSS()
+uint32_t getFileLength(FILE * file)
 {
-    if(DEBUG) printf("Calling sendFileToRandomSS\n");
-    char* next_ss_info = getNextSteppingStone();
-    if(DEBUG){
-        exit(0);
-    }
-    if(next_ss_info == NULL){
-        // call wget and send the file down the chain
-    }
+    fseek(file, 0L, SEEK_END);
 
+    int fileSize = ftell(file);
+    rewind(file);
+    return fileSize;
+}
+
+void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
+{
     int sockfd, status, connect_status;
     struct sockaddr_in serv_addr;
     struct addrinfo hints;
     struct addrinfo *servinfo;
-    char* ip = NULL;
-    char* port = NULL;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
 
-    if ((status = getaddrinfo(ip, port, &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(IPAddress, portNumber, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        exit(1);
+        exit(1);//
     }
+
+
+
+
 
     sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
 
@@ -163,9 +165,133 @@ void sendFileToRandomSS()
         return;
     }
 
-}
 
-*/
+
+
+    uint32_t fileLength = getFileLength(file);
+
+
+    ///////////////// check size //////////////
+    if(fileLength < 401)
+    {
+        if(DEBUG) printf("File length under 400bytes\n");
+        char* data = (char *) calloc(406, sizeof(char));
+
+        uint16_t packetLength = fileLength;
+        uint32_t fileLengthSend = htonl(fileLength);
+        uint16_t packetLengthSend = htons(packetLength);
+
+        memcpy(data + 0, &fileLengthSend, 4);
+        memcpy(data + 4, &packetLengthSend, 2);
+        char ch;
+        int counter = 0;
+
+        while((ch = fgetc(file) ) != EOF )
+        {
+            data[counter + 6] = ch;
+            counter++;
+        }
+
+        if (send(sockfd, data, 6 + fileLength, 0) < 0)
+        {
+            printf("Send failed\n");
+            abort();
+        }
+        free(data);
+    }
+    else
+    {
+        /*File over 400 bytes*/
+        if(DEBUG) printf("File length over 400bytes\n");
+
+        /*All parts of file will be 400 bytes*/
+        if(fileLength % 400 == 0)
+        {
+
+        }
+            /*Last part of file will be less than 400 bytes*/
+        else
+        {
+            /*Find out how many times file needs to be split*/
+            int numberOfParts = fileLength / 400;
+            /*Figure out last part of files size*/
+            int sizeOfLastPart = fileLength % 400;
+            /*Loop through the file the number of times it is split*/
+            int i = 0;
+            for (i; i < numberOfParts; i++)
+            {
+                char *data;
+                /*Last part of the file.  Could be smaller than 400 bytes*/
+                if (numberOfParts == i + 1)
+                {
+                    data = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
+                    /*Go to right position in file*/
+                    fseek(file, i * 400, SEEK_SET);
+
+                    /*Set variables for packet header*/
+                    uint16_t packetLength = 6 + sizeOfLastPart;
+                    uint32_t fileLengthSend = htonl(fileLength);
+                    uint16_t packetLengthSend = htons(packetLength);
+
+                    /*Fill buffer with correct information*/
+                    memcpy(data + 0, &fileLengthSend, 4);
+                    memcpy(data + 4, &packetLengthSend, 2);
+
+                    /*Write chars into buffer*/
+                    int j = 0;
+                    for(int j = 0; j < sizeOfLastPart; j++)
+                    {
+                        char ch;
+                        ch = fgetc(file);
+                        data[6 + j] = ch;
+                    }
+
+                    if (send(sockfd, data, 6 + sizeOfLastPart, 0) < 0)
+                    {
+                        printf("Send failed\n");
+                        abort();
+                    }
+
+                    free(data);
+                }
+                    /*Middle of file where the parts are still 400 bytes*/
+                else
+                {
+                    data = (char *) calloc(406, sizeof(char));
+                    /*Go to right position in file*/
+                    fseek(file, i * 400, SEEK_SET);
+
+                    /*Set variables for packet header*/
+                    uint16_t packetLength = 400;
+                    uint32_t fileLengthSend = htonl(fileLength);
+                    uint16_t packetLengthSend = htons(packetLength);
+
+                    /*Fill buffer with correct information*/
+                    memcpy(data + 0, &fileLengthSend, 4);
+                    memcpy(data + 4, &packetLengthSend, 2);
+
+                    /*Write chars into buffer*/
+                    int j = 0;
+                    for(int j = 0; j < 400; j++)
+                    {
+                        char ch;
+                        ch = fgetc(file);
+                        data[6 + j] = ch;
+                    }
+
+                    if (send(sockfd, data, 406, 0) < 0)
+                    {
+                        printf("Send failed\n");
+                        abort();
+                    }
+
+                    free(data);
+
+                }
+            }
+        }
+    }
+}
 
 int generateRandomNumber()
 {
@@ -271,6 +397,10 @@ int main(int argc, char **argv)
 
     if(DEBUG) printf("IP is %s, port is %s\n", firstSSIP, firstSSPort);
 
+    //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
+    sendFileToRandomSS("129.82.47.64", "50604", chaingangFile);
+
+    //printf("File size is %d\n", getFileLength(chaingangFile));
 
 
     return 0;
