@@ -80,7 +80,17 @@ void server(unsigned short port){
 //	memset(rec_buffer, 0, strlen(rec_buffer));
 	char *ack = "Ack";
 
+	char *data;
 
+	/* First packet received is the url */
+	/*
+	recv_status = recv(clientfd, rec_buffer, 500, 0);
+	unsigned int msg_length;
+	memcpy(&msg_length, rec_buffer + 4, 2);
+	char *url = calloc(msg_length, sizeof(char));
+	memcpy(url, rec_buffer + 6, msg_length);
+	memset(rec_buffer, 0, strlen(rec_buffer));
+	*/
 
 	FILE *ofp = fopen("chainlist.txt", "w");
 

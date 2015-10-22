@@ -174,7 +174,7 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
     ///////////////// check size //////////////
     if(fileLength < 401)
     {
-        if(DEBUG) printf("File length under 400bytes\n");
+        printf("File length under 400bytes\n");
         char* data = (char *) calloc(406, sizeof(char));
 
         uint16_t packetLength = fileLength;
@@ -197,12 +197,13 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
             printf("Send failed\n");
             abort();
         }
+
         free(data);
     }
     else
     {
         /*File over 400 bytes*/
-        if(DEBUG) printf("File length over 400bytes\n");
+        printf("File length over 400bytes\n");
 
         /*All parts of file will be 400 bytes*/
         if(fileLength % 400 == 0)
@@ -218,12 +219,14 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
             int sizeOfLastPart = fileLength % 400;
             /*Loop through the file the number of times it is split*/
             int i = 0;
-            for (i; i < numberOfParts; i++)
+            for (i; i <= numberOfParts; i++)
             {
+                if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
                 char *data;
                 /*Last part of the file.  Could be smaller than 400 bytes*/
-                if (numberOfParts == i + 1)
+                if (numberOfParts == i)
                 {
+                    if(DEBUG) printf("Sending last part of file\n");
                     data = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
                     /*Go to right position in file*/
                     fseek(file, i * 400, SEEK_SET);
@@ -239,7 +242,7 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
 
                     /*Write chars into buffer*/
                     int j = 0;
-                    for(int j = 0; j < sizeOfLastPart; j++)
+                    for(j; j < sizeOfLastPart; j++)
                     {
                         char ch;
                         ch = fgetc(file);
@@ -252,11 +255,21 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
                         abort();
                     }
 
+                    printf("send in loop iteration %d is:\n", i);
+                    char c;
+                    int k = 0;
+                    for(k = 0; k < sizeOfLastPart + 6; k++)
+                    {
+                        printf("%c", data[k]);
+                    }
+
+
                     free(data);
                 }
                     /*Middle of file where the parts are still 400 bytes*/
                 else
                 {
+                    if(DEBUG) printf("Sending middle parts of file\n");
                     data = (char *) calloc(406, sizeof(char));
                     /*Go to right position in file*/
                     fseek(file, i * 400, SEEK_SET);
@@ -272,7 +285,7 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
 
                     /*Write chars into buffer*/
                     int j = 0;
-                    for(int j = 0; j < 400; j++)
+                    for(j; j < 400; j++)
                     {
                         char ch;
                         ch = fgetc(file);
@@ -283,6 +296,14 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
                     {
                         printf("Send failed\n");
                         abort();
+                    }
+
+                    printf("send in loop iteration %d is:\n", i);
+                    int k = 0;
+                    char c;
+                    for(k = 6; k < 406; k++)
+                    {
+                        printf("%c", data[k]);
                     }
 
                     free(data);
@@ -395,10 +416,10 @@ int main(int argc, char **argv)
     memcpy(tmpLine, firstSS, strlen(firstSS));
     char * firstSSPort = getPort(tmpLine);
 
-    if(DEBUG) printf("IP is %s, port is %s\n", firstSSIP, firstSSPort);
+    //if(DEBUG) printf("IP is %s, port is %s\n", firstSSIP, firstSSPort);
 
     //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
-    sendFileToRandomSS("129.82.47.64", "50604", chaingangFile);
+    sendFileToRandomSS("129.82.46.226", "42360", chaingangFile);
 
     //printf("File size is %d\n", getFileLength(chaingangFile));
 
