@@ -17,7 +17,7 @@ void server(unsigned short port);
  * The IP address and port for the server to connect to is determined by "host_list.txt"
  * If there are no remaining hosts to connect to, the client will initiate file retrieval
  */
-void client();
+void client(char* next_ss_info, char* url);
 
 /**
  * Reads host_list.txt

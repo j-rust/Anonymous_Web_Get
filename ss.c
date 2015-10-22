@@ -19,10 +19,10 @@
 #define DEBUG 1
 
 void server(unsigned short port){
-	if(DEBUG) {
-		printf("Calling client()\n");
-		client();
-	}
+//	if(DEBUG) {
+//		printf("Calling client()\n");
+//		client();
+//	}
 	int status, sockfd, clientfd, listen_success;
 	struct sockaddr_in server;
 	struct sockaddr_storage their_addr;
@@ -61,20 +61,60 @@ void server(unsigned short port){
 	printf("%s %d\n", getCurrentIP(), ntohs(sockin.sin_port));
 
 	addr_size = sizeof(their_addr);
-	int byte_count;
 	clientfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+	printf("Accepted an incoming connection\n");
+
+	char *rec_buffer = calloc(500, sizeof(char));
+	uint32_t total_length;
+	uint32_t total_bytes_received = 500;
+	char *data;
+	int recv_status;
+
+	/* First packet received is the url */
+	recv_status = recv(clientfd, rec_buffer, 500, 0);
+	unsigned int msg_length;
+	memcpy(&msg_length, rec_buffer + 4, 2);
+	char *url = calloc(msg_length, sizeof(char));
+	memcpy(url, rec_buffer + 6, msg_length);
+	memset(rec_buffer, 0, strlen(rec_buffer));
+
+
+	FILE *ofp = fopen("chainlist.txt", "w");
+
+	while (total_bytes_received < total_length) {
+		msg_length = 0;
+		recv_status = recv(clientfd, rec_buffer, 500, 0);
+		if (recv_status < 0) { perror("Error: receive failed\n"); }
+
+		memcpy(&total_length, rec_buffer + 0, 4);
+		memcpy(&msg_length, rec_buffer + 4, 2);
+		total_length = htonl(total_length);
+		msg_length = htons(msg_length);
+
+		printf("File Length: %zu\n", total_length);
+		printf("Message Length: %u\n", msg_length);
+
+		total_bytes_received += msg_length;
+		data = calloc(msg_length, sizeof(char));
+		memcpy(data, rec_buffer + 6, msg_length);
+		printf("Message is: %s\n", data);
+		fprintf(ofp, data);
+
+		free(data);
+		memset(rec_buffer, 0, strlen(rec_buffer));
+	}
+	fclose(ofp);
+
+	char* next_ss = getNextSteppingStone();
+	if (next_ss == NULL) {
+		// call wget and send back
+	} else {
+		client(next_ss, url);
+	}
 
 }
 
-void client(){
-
-	char* next_ss_info = getNextSteppingStone();
-
-	if(DEBUG) printf("Next SS is %s\n", next_ss_info);
-
-	if(next_ss_info == NULL) {
-		// call wget and send the file down the chain
-	}
+void client(char* next_ss_info, char* url){
 
 	char *mutable_info = calloc(strlen(next_ss_info), sizeof(char));
 	memcpy(mutable_info, next_ss_info, strlen(next_ss_info));
