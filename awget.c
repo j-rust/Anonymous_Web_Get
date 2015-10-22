@@ -112,6 +112,20 @@ void printFileContents(FILE * file)
     printf("\n");
 }
 
+char * getPort(char * line)
+{
+    char* tmp;
+    tmp = strtok(line, "\t");
+    tmp = strtok(NULL, "\t");
+    return tmp;
+}
+
+char* getIP(char* line){
+    char* tmp;
+    tmp = strtok(line, "\t");
+    return tmp;
+}
+
 /*
 void sendFileToRandomSS()
 {
@@ -150,8 +164,8 @@ void sendFileToRandomSS()
     }
 
 }
-*/
 
+*/
 
 int generateRandomNumber()
 {
@@ -160,6 +174,7 @@ int generateRandomNumber()
     return rand();
 }
 
+/*This is not truly random.  If we have time we should try to fix it.*/
 char* getRandomSS(FILE * filename)
 {
     char* contentsOfLine = calloc(100, sizeof(char));
@@ -191,7 +206,6 @@ char* getRandomSS(FILE * filename)
     {
         randomNumber = randomNumber - 1;
     }
-
 
     do
     {
@@ -247,8 +261,17 @@ int main(int argc, char **argv)
     }
 
     if(DEBUG) printFileContents(chaingangFile);
+    char *firstSS = getRandomSS(chaingangFile);
+    char *tmpLine = calloc(0, strlen(firstSS));
+    memcpy(tmpLine, firstSS, strlen(firstSS));
+    char * firstSSIP = getIP(tmpLine);
+    memset(tmpLine, 0, strlen(firstSS));
+    memcpy(tmpLine, firstSS, strlen(firstSS));
+    char * firstSSPort = getPort(tmpLine);
 
-   if(DEBUG) printf("Random line is: %s\n", getRandomSS(chaingangFile));
+    if(DEBUG) printf("IP is %s, port is %s\n", firstSSIP, firstSSPort);
+
+
 
     return 0;
 }
