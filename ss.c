@@ -65,52 +65,69 @@ void server(unsigned short port){
 	printf("Accepted an incoming connection\n");
 
 	char *rec_buffer = calloc(500, sizeof(char));
-	uint32_t total_length;
-	uint32_t total_bytes_received = 500;
-	char *data;
+	uint32_t file_length = 1;
+	uint32_t total_bytes_received = 0;
+
 	int recv_status;
 
-	/* First packet received is the url */
-	recv_status = recv(clientfd, rec_buffer, 500, 0);
+//	/* First packet received is the url */
+//	recv_status = recv(clientfd, rec_buffer, 500, 0);
 	unsigned int msg_length;
-	memcpy(&msg_length, rec_buffer + 4, 2);
-	char *url = calloc(msg_length, sizeof(char));
-	memcpy(url, rec_buffer + 6, msg_length);
-	memset(rec_buffer, 0, strlen(rec_buffer));
+//	memcpy(&msg_length, rec_buffer + 4, 2);
+//	msg_length = htons(msg_length);
+//	char *url = calloc(msg_length, sizeof(char));
+//	memcpy(url, rec_buffer + 6, msg_length);
+//	memset(rec_buffer, 0, strlen(rec_buffer));
+	char *ack = "Ack";
+
 
 
 	FILE *ofp = fopen("chainlist.txt", "w");
 
-	while (total_bytes_received < total_length) {
+	while (total_bytes_received < file_length) {
 		msg_length = 0;
 		recv_status = recv(clientfd, rec_buffer, 500, 0);
 		if (recv_status < 0) { perror("Error: receive failed\n"); }
 
-		memcpy(&total_length, rec_buffer + 0, 4);
+		memcpy(&file_length, rec_buffer + 0, 4);
+		file_length = ntohl(file_length);
 		memcpy(&msg_length, rec_buffer + 4, 2);
-		total_length = htonl(total_length);
-		msg_length = htons(msg_length);
-
-		printf("File Length: %zu\n", total_length);
-		printf("Message Length: %u\n", msg_length);
+		msg_length = ntohs(msg_length);
 
 		total_bytes_received += msg_length;
-		data = calloc(msg_length, sizeof(char));
+
+		printf("File Length: %zu\n", file_length);
+		printf("Message Length: %u\n", msg_length);
+		printf("Bytes Received: %d\n", total_bytes_received);
+
+		char *data = calloc(msg_length, sizeof(char));
 		memcpy(data, rec_buffer + 6, msg_length);
 		printf("Message is: %s\n", data);
 		fprintf(ofp, data);
 
 		free(data);
-		memset(rec_buffer, 0, strlen(rec_buffer));
+		memset(rec_buffer, 0, 500);
+		/* send ack to add temporary to delay */
+		if(send(clientfd, ack, strlen(ack), 0) < 0) {
+			int send_status = send(clientfd, ack, strlen(ack), 0);
+			while (send_status < 0) {
+				send_status = send(clientfd, ack, strlen(ack), 0);
+			}
+
+		}
+
 	}
 	fclose(ofp);
 
-	char* next_ss = getNextSteppingStone();
-	if (next_ss == NULL) {
-		// call wget and send back
-	} else {
-		client(next_ss, url);
-	}
+//	char* next_ss = getNextSteppingStone();
+//	if (next_ss == NULL) {
+//		char cmd_buf[1024];
+//		snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -o download_file", url);
+//		system(cmd_buf);
+//
+//	} else {
+//		client(next_ss, url);
+//	}
 
 }
 
