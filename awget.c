@@ -142,7 +142,7 @@ uint32_t getFileLength(FILE * file)
     return fileSize;
 }
 
-void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
+void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file, char* url)
 {
     int sockfd, status, connect_status;
     struct sockaddr_in serv_addr;
@@ -171,11 +171,46 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
         return;
     }
 
+    /*Set variables for packet header*/
+    uint16_t lenghtOfURL = strlen(url);
+    uint32_t totalLength = htonl(1000);
+    uint16_t lengthOfURLNetworkFormat = htons(lenghtOfURL);
+    char* urlData = (char *) calloc(6 + strlen(url), sizeof(char));
+    /*Fill buffer with correct information*/
+    memcpy(urlData + 0, &totalLength, 4);
+    memcpy(urlData + 4, &lengthOfURLNetworkFormat, 2);
+    memcpy(urlData + 6, url, strlen(url));
+
+    int a = 0;
+    for(a = 0; a < 6 + strlen(url); a++)
+    {
+        char c = urlData[a];
+        printf("%c\n", c);
+    }
+
+
+    if (send(sockfd, urlData, 6 + strlen(url), 0) < 0)
+    {
+        printf("Send failed\n");
+        abort();
+    }
+
+    char *rec_buffer = calloc(500, sizeof(char));
+
+    int recv_status = recv(sockfd, rec_buffer, 500, 0);
+
+    free(rec_buffer);
+
+
+
+
+
+
 
 
     uint32_t fileLength = getFileLength(file);
 
-    printf("File length: %u\n", fileLength);
+
 
 
     ///////////////// check size //////////////
@@ -206,6 +241,12 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
         }
 
         free(data);
+
+        char *rec_buffer = calloc(500, sizeof(char));
+
+        int recv_status = recv(sockfd, rec_buffer, 500, 0);
+
+        free(rec_buffer);
     }
     else
     {
@@ -272,6 +313,12 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
 
 
                     free(data);
+
+                    char *rec_buffer = calloc(500, sizeof(char));
+
+                    int recv_status = recv(sockfd, rec_buffer, 500, 0);
+
+                    free(rec_buffer);
                 }
                     /*Middle of file where the parts are still 400 bytes*/
                 else
@@ -315,6 +362,11 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
 
                     free(data);
 
+                    char *rec_buffer = calloc(500, sizeof(char));
+
+                    int recv_status = recv(sockfd, rec_buffer, 500, 0);
+
+                    free(rec_buffer);
                 }
             }
         }
@@ -417,10 +469,10 @@ int main(int argc, char **argv)
     char * firstSSPort = getPort(tmpLine);
 
     if(DEBUG) printf("%s %s\n", firstSSIP, firstSSPort);
-    if(DEBUG) printf("Size of port %u\n", strlen(firstSSPort));
+    if(DEBUG) printf("Size of port %zu\n", strlen(firstSSPort));
 
     //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
-    sendFileToRandomSS(firstSSIP, firstSSPort, chaingangFile);
+    sendFileToRandomSS(firstSSIP, firstSSPort, chaingangFile, URL);
 
     //printf("File size is %d\n", getFileLength(chaingangFile));
 
