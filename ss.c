@@ -15,6 +15,159 @@
 
 #define DEBUG 1
 
+void sendFile(int sockfd, char* filename){
+	char *tmp_buffer = calloc(100, sizeof(char));
+
+	FILE * file;
+	file = fopen(filename, "r");
+
+	uint32_t fileLength = getFileLength(filename);
+	int recv_status;
+
+	///////////////// check size //////////////
+	if(fileLength < 401)
+	{
+		printf("File length under 400bytes\n");
+		char* content = (char *) calloc(406, sizeof(char));
+
+		uint16_t packetLength = fileLength;
+		uint32_t fileLengthSend = htonl(fileLength);
+		uint16_t packetLengthSend = htons(packetLength);
+
+		memcpy(content + 0, &fileLengthSend, 4);
+		memcpy(content + 4, &packetLengthSend, 2);
+		char ch;
+		int counter = 0;
+
+		while((ch = fgetc(file) ) != EOF )
+		{
+			content[counter + 6] = ch;
+			counter++;
+		}
+
+		if (send(sockfd, content, 6 + fileLength, 0) < 0)
+		{
+			printf("Send failed\n");
+			abort();
+		}
+		recv_status = recv(sockfd, tmp_buffer, 500, 0);
+
+		free(content);
+	}
+	else
+	{
+		/*File over 400 bytes*/
+		printf("File length over 400bytes\n");
+
+		/*All parts of file will be 400 bytes*/
+		if(fileLength % 400 == 0)
+		{
+
+		}
+			/*Last part of file will be less than 400 bytes*/
+		else
+		{
+			/*Find out how many times file needs to be split*/
+			int numberOfParts = fileLength / 400;
+			/*Figure out last part of files size*/
+			int sizeOfLastPart = fileLength % 400;
+			/*Loop through the file the number of times it is split*/
+			int i = 0;
+			for (i; i <= numberOfParts; i++)
+			{
+				if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
+				char *content;
+				/*Last part of the file.  Could be smaller than 400 bytes*/
+				if (numberOfParts == i)
+				{
+					if(DEBUG) printf("Sending last part of file\n");
+					content = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
+					/*Go to right position in file*/
+					fseek(file, i * 400, SEEK_SET);
+
+					/*Set variables for packet header*/
+					uint16_t packetLength = 6 + sizeOfLastPart;
+					uint32_t fileLengthSend = htonl(fileLength);
+					uint16_t packetLengthSend = htons(packetLength);
+
+					/*Fill buffer with correct information*/
+					memcpy(content + 0, &fileLengthSend, 4);
+					memcpy(content + 4, &packetLengthSend, 2);
+
+					/*Write chars into buffer*/
+					int j = 0;
+					for(j; j < sizeOfLastPart; j++)
+					{
+						char ch;
+						ch = fgetc(file);
+						content[6 + j] = ch;
+					}
+
+					if (send(sockfd, content, 6 + sizeOfLastPart, 0) < 0)
+					{
+						printf("Send failed\n");
+						abort();
+					}
+
+					recv_status = recv(sockfd, tmp_buffer, 500, 0);
+
+					printf("send in loop iteration %d is:\n", i);
+					char c;
+					int k = 0;
+					for(k = 0; k < sizeOfLastPart + 6; k++)
+					{
+						printf("%c", content[k]);
+					}
+
+
+					free(content);
+				}
+					/*Middle of file where the parts are still 400 bytes*/
+				else
+				{
+					if(DEBUG) printf("Sending middle parts of file\n");
+					char* content_buffer = calloc(406, sizeof(char));
+					/*Go to right position in file*/
+					fseek(file, i * 400, SEEK_SET);
+
+					/*Set variables for packet header*/
+					uint16_t packetLength = 400;
+					uint32_t fileLengthSend = htonl(fileLength);
+					uint16_t packetLengthSend = htons(packetLength);
+
+					/*Fill buffer with correct information*/
+					memcpy(content_buffer + 0, &fileLengthSend, 4);
+					memcpy(content_buffer + 4, &packetLengthSend, 2);
+
+					/*Write chars into buffer*/
+					int j = 0;
+					for(j; j < 400; j++)
+					{
+						char ch;
+						ch = fgetc(file);
+						content_buffer[6 + j] = ch;
+					}
+
+
+					if (send(sockfd, content_buffer, 406, 0) < 0)
+					{
+						printf("Send failed\n");
+						abort();
+					}
+
+					recv_status = recv(sockfd, tmp_buffer, 500, 0);
+
+					printf("send in loop iteration %d is:\n", i);
+					free(content_buffer);
+
+				}
+			}
+		}
+	}
+
+}
+
+
 
 void server(unsigned short port){
 	int status, sockfd, clientfd, listen_success;
@@ -69,8 +222,10 @@ void server(unsigned short port){
 	recv_status = recv(clientfd, rec_buffer, 500, 0);
 	memcpy(&msg_length, rec_buffer + 4, 2);
 	msg_length = ntohs(msg_length);
+	char* url_packet = calloc(strlen(rec_buffer), sizeof(char));
 	char *url = calloc(msg_length, sizeof(char));
 	memcpy(url, rec_buffer + 6, msg_length);
+	memcpy(url_packet, rec_buffer, strlen(rec_buffer));
 	memset(rec_buffer, 0, strlen(rec_buffer));
 	char *ack = "Ack";
 
@@ -120,7 +275,6 @@ void server(unsigned short port){
 			}
 
 		}
-
 	}
 	fclose(ofp);
 
@@ -131,7 +285,6 @@ void server(unsigned short port){
 		system(cmd_buf);
 
 		char *tmp_buffer = calloc(100, sizeof(char));
-
 
 		FILE * file;
 		file = fopen("download_file", "r");
@@ -319,6 +472,205 @@ void client(char* next_ss_info, char* url){
 		perror("Error trying to connect\n");
 		return;
 	}
+	char *url_packet = calloc(strlen(url) + 6, sizeof(char));
+	uint16_t url_length = strlen(url);
+	url_length = htons(url_length);
+	memcpy(url_packet + 4, &url_length, 2);
+	memcpy(url_packet + 6, url, strlen(url));
+	if(DEBUG) printf("Connected to socket, trying to send url packet\n");
+	if (send(sockfd, url_packet, strlen(url) + 6, 0) < 0) {
+		printf("Send failed\n");
+		// figure out how to handle failed send
+	}
+	if(DEBUG) printf("Sent url packet\n");
+
+	char *rec_buffer = calloc(500, sizeof(char));
+
+	int recv_status = recv(sockfd, rec_buffer, 500, 0);
+
+	char *tmp_buffer = calloc(100, sizeof(char));
+	char *filename = "chainlist.txt";
+
+	FILE * file;
+	file = fopen(filename, "r");
+
+	uint32_t fileLength = getFileLength(filename);
+
+	///////////////// check size //////////////
+	if(fileLength < 401)
+	{
+		printf("File length under 400bytes\n");
+		char* content = (char *) calloc(406, sizeof(char));
+
+		uint16_t packetLength = fileLength;
+		uint32_t fileLengthSend = htonl(fileLength);
+		uint16_t packetLengthSend = htons(packetLength);
+
+		memcpy(content + 0, &fileLengthSend, 4);
+		memcpy(content + 4, &packetLengthSend, 2);
+		char ch;
+		int counter = 0;
+
+		while((ch = fgetc(file) ) != EOF )
+		{
+			content[counter + 6] = ch;
+			counter++;
+		}
+
+		if (send(sockfd, content, 6 + fileLength, 0) < 0)
+		{
+			printf("Send failed\n");
+			abort();
+		}
+		recv_status = recv(sockfd, tmp_buffer, 500, 0);
+
+		free(content);
+	}
+	else
+	{
+		/*File over 400 bytes*/
+		printf("File length over 400bytes\n");
+
+		/*All parts of file will be 400 bytes*/
+		if(fileLength % 400 == 0)
+		{
+
+		}
+			/*Last part of file will be less than 400 bytes*/
+		else
+		{
+			/*Find out how many times file needs to be split*/
+			int numberOfParts = fileLength / 400;
+			/*Figure out last part of files size*/
+			int sizeOfLastPart = fileLength % 400;
+			/*Loop through the file the number of times it is split*/
+			int i = 0;
+			for (i; i <= numberOfParts; i++)
+			{
+				if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
+				char *content;
+				/*Last part of the file.  Could be smaller than 400 bytes*/
+				if (numberOfParts == i)
+				{
+					if(DEBUG) printf("Sending last part of file\n");
+					content = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
+					/*Go to right position in file*/
+					fseek(file, i * 400, SEEK_SET);
+
+					/*Set variables for packet header*/
+					uint16_t packetLength = 6 + sizeOfLastPart;
+					uint32_t fileLengthSend = htonl(fileLength);
+					uint16_t packetLengthSend = htons(packetLength);
+
+					/*Fill buffer with correct information*/
+					memcpy(content + 0, &fileLengthSend, 4);
+					memcpy(content + 4, &packetLengthSend, 2);
+
+					/*Write chars into buffer*/
+					int j = 0;
+					for(j; j < sizeOfLastPart; j++)
+					{
+						char ch;
+						ch = fgetc(file);
+						content[6 + j] = ch;
+					}
+
+					if (send(sockfd, content, 6 + sizeOfLastPart, 0) < 0)
+					{
+						printf("Send failed\n");
+						abort();
+					}
+
+					recv_status = recv(sockfd, tmp_buffer, 500, 0);
+
+					printf("send in loop iteration %d is:\n", i);
+					char c;
+					int k = 0;
+					for(k = 0; k < sizeOfLastPart + 6; k++)
+					{
+						printf("%c", content[k]);
+					}
+
+
+					free(content);
+				}
+					/*Middle of file where the parts are still 400 bytes*/
+				else
+				{
+					if(DEBUG) printf("Sending middle parts of file\n");
+					char* content_buffer = calloc(406, sizeof(char));
+					/*Go to right position in file*/
+					fseek(file, i * 400, SEEK_SET);
+
+					/*Set variables for packet header*/
+					uint16_t packetLength = 400;
+					uint32_t fileLengthSend = htonl(fileLength);
+					uint16_t packetLengthSend = htons(packetLength);
+
+					/*Fill buffer with correct information*/
+					memcpy(content_buffer + 0, &fileLengthSend, 4);
+					memcpy(content_buffer + 4, &packetLengthSend, 2);
+
+					/*Write chars into buffer*/
+					int j = 0;
+					for(j; j < 400; j++)
+					{
+						char ch;
+						ch = fgetc(file);
+						content_buffer[6 + j] = ch;
+					}
+
+
+					if (send(sockfd, content_buffer, 406, 0) < 0)
+					{
+						printf("Send failed\n");
+						abort();
+					}
+
+					recv_status = recv(sockfd, tmp_buffer, 500, 0);
+
+					printf("send in loop iteration %d is:\n", i);
+					free(content_buffer);
+
+				}
+			}
+		}
+	}
+
+	uint32_t total_bytes_received = 0;
+	uint32_t file_length = 1;
+	unsigned int msg_length;
+	char *ack = "Ack";
+
+
+	while (total_bytes_received < file_length) {
+		msg_length = 0;
+		recv_status = recv(sockfd, rec_buffer, 500, 0);
+		if (recv_status < 0) { perror("Error: receive failed\n"); }
+
+		memcpy(&file_length, rec_buffer + 0, 4);
+		file_length = ntohl(file_length);
+		memcpy(&msg_length, rec_buffer + 4, 2);
+		msg_length = ntohs(msg_length);
+
+		total_bytes_received += msg_length;
+
+		char *data = calloc(msg_length, sizeof(char));
+		memcpy(data, rec_buffer + 6, msg_length);
+
+		free(data);
+		memset(rec_buffer, 0, 500);
+		/* send ack to add temporary to delay */
+		if(send(sockfd, ack, strlen(ack), 0) < 0) {
+			int send_status = send(sockfd, ack, strlen(ack), 0);
+			while (send_status < 0) {
+				send_status = send(sockfd, ack, strlen(ack), 0);
+			}
+
+		}
+	}
+
+
 
 	return;
 }
@@ -394,10 +746,14 @@ char* parseIP(char* line){
 
 char* parsePort(char *line){
 	char* tmp;
-	if(DEBUG) printf("Received line %s\n", line);
 	tmp = strtok(line, "\t");
-	if(DEBUG) printf("First port token: %s\n", tmp);
 	tmp = strtok(NULL, "\t");
+	int len = strlen(tmp);
+	int current = 0;
+	while (current < len) {
+		if(tmp[current] == '\n') tmp[current] = '\0';
+		current++;
+	}
 	return tmp;
 }
 
@@ -411,7 +767,7 @@ int generateRandomNumber(int num_ss)
 	for (i; i < 100; i++) {
 		next_ss = rand() % (num_ss);
 	}
-	return next_ss + 1;
+	return next_ss;
 }
 
 char* getRandomSS()
