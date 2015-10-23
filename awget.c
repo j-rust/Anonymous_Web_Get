@@ -253,7 +253,7 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file, char* ur
         /*All parts of file will be 400 bytes*/
         if(fileLength % 400 == 0)
         {
-
+            /******************************Dont fucking forget to do this zach*****************************************/
         }
             /*Last part of file will be less than 400 bytes*/
         else
@@ -368,6 +368,72 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file, char* ur
             }
         }
     }
+
+    uint32_t total_bytes_received = 0;
+    uint32_t file_length = 1;
+    unsigned int msg_length;
+    char *ack = "Ack";
+
+    char* outBuff = NULL;
+
+
+    //FILE *outfileptr = fopen("outfile.txt", "w+");
+
+    while (total_bytes_received < file_length) {
+        char* receiverBuffer = (char*) calloc(500, sizeof(char));
+        msg_length = 0;
+        recv_status = recv(sockfd, receiverBuffer, 500, 0);
+        if (recv_status < 0) { perror("Error: receive failed\n"); }
+
+
+
+        memcpy(&file_length, receiverBuffer + 0, 4);
+        file_length = ntohl(file_length);
+        memcpy(&msg_length, receiverBuffer + 4, 2);
+        msg_length = ntohs(msg_length);
+
+        if(outBuff == NULL)
+        {
+            outBuff = (char*) calloc(file_length, sizeof(char));
+        }
+
+
+
+
+        printf("File Length: %zu\n", file_length);
+        printf("Message Length: %zu\n", msg_length);
+        printf("Bytes Received: %d\n", total_bytes_received);
+
+        char *data = calloc(msg_length, sizeof(char));
+        memcpy(data, receiverBuffer + 6, msg_length);
+        printf("Message is: %s\n", data);
+        printf("length of data is %d\n", strlen(data));
+        //fprintf(outfileptr, data);
+
+        memcpy(outBuff + total_bytes_received, data, msg_length);
+        total_bytes_received += msg_length;
+
+        free(data);
+        printf("free worked\n");
+        memset(rec_buffer, 0, 500);
+
+        /* send ack to add temporary to delay */
+        if(send(sockfd, ack, strlen(ack), 0) < 0) {
+            int send_status = send(sockfd, ack, strlen(ack), 0);
+            while (send_status < 0) {
+                send_status = send(sockfd, ack, strlen(ack), 0);
+            }
+
+        }
+    }
+    printf("out of loop\n");
+    //fclose(outfileptr);
+    printf("Closed file pointer\n");
+    FILE *outfileptr = fopen("outfile.txt", "w");
+    fprintf(outfileptr, outBuff);
+    printf("%d\n", strlen(outBuff));
+    fclose(outfileptr);
+
 }
 
 int generateRandomNumber()
@@ -423,6 +489,11 @@ char* getRandomSS(FILE * filename)
     }
 }
 
+void server()
+{
+
+}
+
 int main(int argc, char **argv)
 {
     /*File containing the stepping stones passed in from the user, or frome the chaingaing.txt file*/
@@ -470,6 +541,7 @@ int main(int argc, char **argv)
 
     //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
     sendFileToRandomSS(firstSSIP, firstSSPort, chaingangFile, URL);
+    server();
 
     //printf("File size is %d\n", getFileLength(chaingangFile));
 
