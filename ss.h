@@ -5,7 +5,12 @@
 #ifndef ANONYMOUS_WEB_GET_SS_H
 #define ANONYMOUS_WEB_GET_SS_H
 
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <stdint.h>
 
 /**
  * @args port - Port to connect to. If no port is passed as a command line
@@ -48,6 +53,8 @@ char* parsePort(char* line);
 int generateRandomNumber(int num_ss);
 
 char* getRandomSS();
+
+uint32_t getFileLength(char * filename);
 
 
 

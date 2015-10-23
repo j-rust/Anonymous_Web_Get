@@ -175,9 +175,6 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file)
 
     uint32_t fileLength = getFileLength(file);
 
-    printf("File length: %u\n", fileLength);
-
-
     ///////////////// check size //////////////
     if(fileLength < 401)
     {

@@ -3,12 +3,9 @@
 //
 
 #include "ss.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <netdb.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -19,10 +16,6 @@
 #define DEBUG 1
 
 void server(unsigned short port){
-//	if(DEBUG) {
-//		printf("Calling client()\n");
-//		client();
-//	}
 	int status, sockfd, clientfd, listen_success;
 	struct sockaddr_in server;
 	struct sockaddr_storage their_addr;
@@ -69,28 +62,30 @@ void server(unsigned short port){
 	uint32_t total_bytes_received = 0;
 
 	int recv_status;
-
-//	/* First packet received is the url */
-//	recv_status = recv(clientfd, rec_buffer, 500, 0);
 	unsigned int msg_length;
-//	memcpy(&msg_length, rec_buffer + 4, 2);
-//	msg_length = htons(msg_length);
-//	char *url = calloc(msg_length, sizeof(char));
-//	memcpy(url, rec_buffer + 6, msg_length);
-//	memset(rec_buffer, 0, strlen(rec_buffer));
-	char *ack = "Ack";
-
-	char *data;
 
 	/* First packet received is the url */
-	/*
 	recv_status = recv(clientfd, rec_buffer, 500, 0);
-	unsigned int msg_length;
 	memcpy(&msg_length, rec_buffer + 4, 2);
+	msg_length = ntohs(msg_length);
 	char *url = calloc(msg_length, sizeof(char));
 	memcpy(url, rec_buffer + 6, msg_length);
 	memset(rec_buffer, 0, strlen(rec_buffer));
-	*/
+	char *ack = "Ack";
+	char *data;
+
+	printf("Received url: %s\n", url);
+
+	/* send ack to add temporary to delay */
+	if(send(clientfd, ack, strlen(ack), 0) < 0) {
+//		int send_status = send(clientfd, ack, strlen(ack), 0);
+//		while (send_status < 0) {
+//			send_status = send(clientfd, ack, strlen(ack), 0);
+//		}
+
+		printf("Send failed\n");
+	}
+
 
 	FILE *ofp = fopen("chainlist.txt", "w");
 
@@ -131,13 +126,162 @@ void server(unsigned short port){
 
 	char* next_ss = getNextSteppingStone();
 	if (next_ss == NULL) {
-//		char cmd_buf[1024];
-//		snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -o download_file", url);
-//		system(cmd_buf);
-		printf("If this was functional, I would call wget!\n");
+		char cmd_buf[1024];
+		snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -O download_file", url);
+		system(cmd_buf);
+
+		FILE * file;
+		if(DEBUG) printf("Opening download file\n");
+		fopen("download_file", "r");
+
+		if(DEBUG) printf("Opened download file\n");
+		uint32_t fileLength = getFileLength("download_file");
+		if(DEBUG) printf("Downloaded file length: %u\n", fileLength);
+
+		///////////////// check size //////////////
+		if(fileLength < 401)
+		{
+			printf("File length under 400bytes\n");
+			char* data = (char *) calloc(406, sizeof(char));
+
+			uint16_t packetLength = fileLength;
+			uint32_t fileLengthSend = htonl(fileLength);
+			uint16_t packetLengthSend = htons(packetLength);
+
+			memcpy(data + 0, &fileLengthSend, 4);
+			memcpy(data + 4, &packetLengthSend, 2);
+			char ch;
+			int counter = 0;
+
+			while((ch = fgetc(file) ) != EOF )
+			{
+				data[counter + 6] = ch;
+				counter++;
+			}
+
+			if (send(sockfd, data, 6 + fileLength, 0) < 0)
+			{
+				printf("Send failed\n");
+				abort();
+			}
+
+			free(data);
+		}
+		else
+		{
+			/*File over 400 bytes*/
+			printf("File length over 400bytes\n");
+
+			/*All parts of file will be 400 bytes*/
+			if(fileLength % 400 == 0)
+			{
+
+			}
+				/*Last part of file will be less than 400 bytes*/
+			else
+			{
+				/*Find out how many times file needs to be split*/
+				int numberOfParts = fileLength / 400;
+				/*Figure out last part of files size*/
+				int sizeOfLastPart = fileLength % 400;
+				/*Loop through the file the number of times it is split*/
+				int i = 0;
+				for (i; i <= numberOfParts; i++)
+				{
+					if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
+					char *data;
+					/*Last part of the file.  Could be smaller than 400 bytes*/
+					if (numberOfParts == i)
+					{
+						if(DEBUG) printf("Sending last part of file\n");
+						data = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
+						/*Go to right position in file*/
+						fseek(file, i * 400, SEEK_SET);
+
+						/*Set variables for packet header*/
+						uint16_t packetLength = 6 + sizeOfLastPart;
+						uint32_t fileLengthSend = htonl(fileLength);
+						uint16_t packetLengthSend = htons(packetLength);
+
+						/*Fill buffer with correct information*/
+						memcpy(data + 0, &fileLengthSend, 4);
+						memcpy(data + 4, &packetLengthSend, 2);
+
+						/*Write chars into buffer*/
+						int j = 0;
+						for(j; j < sizeOfLastPart; j++)
+						{
+							char ch;
+							ch = fgetc(file);
+							data[6 + j] = ch;
+						}
+
+						if (send(clientfd, data, 6 + sizeOfLastPart, 0) < 0)
+						{
+							printf("Send failed\n");
+							abort();
+						}
+
+						printf("send in loop iteration %d is:\n", i);
+						char c;
+						int k = 0;
+						for(k = 0; k < sizeOfLastPart + 6; k++)
+						{
+							printf("%c", data[k]);
+						}
+
+
+						free(data);
+					}
+						/*Middle of file where the parts are still 400 bytes*/
+					else
+					{
+						if(DEBUG) printf("Sending middle parts of file\n");
+						data = (char *) calloc(406, sizeof(char));
+						/*Go to right position in file*/
+						fseek(file, i * 400, SEEK_SET);
+
+						/*Set variables for packet header*/
+						uint16_t packetLength = 400;
+						uint32_t fileLengthSend = htonl(fileLength);
+						uint16_t packetLengthSend = htons(packetLength);
+
+						/*Fill buffer with correct information*/
+						memcpy(data + 0, &fileLengthSend, 4);
+						memcpy(data + 4, &packetLengthSend, 2);
+
+						/*Write chars into buffer*/
+						int j = 0;
+						for(j; j < 400; j++)
+						{
+							char ch;
+							ch = fgetc(file);
+							data[6 + j] = ch;
+						}
+
+						if (send(clientfd, data, 406, 0) < 0)
+						{
+							printf("Send failed\n");
+							abort();
+						}
+
+						printf("send in loop iteration %d is:\n", i);
+						int k = 0;
+						char c;
+						for(k = 6; k < 406; k++)
+						{
+							printf("%c", data[k]);
+						}
+
+						free(data);
+
+					}
+				}
+			}
+		}
+
 
 	} else {
-		char *url = "place_holder";
 		client(next_ss, url);
 	}
 
@@ -297,9 +441,7 @@ char* getRandomSS()
 
 	numberOfLinesInFile = atoi(contentsOfLine);
 	randomNumber = (generateRandomNumber(numberOfLinesInFile)) + 1;
-	positionOfCharInLine = 0;
 
-//	if(randomNumber == numberOfLinesInFile) randomNumber = randomNumber - 1;
 
 	char* line = calloc(30, sizeof(char));
 	while (fgets(line, 30, ifp)) {
@@ -312,6 +454,18 @@ char* getRandomSS()
 	}
 
 }
+
+uint32_t getFileLength(char * filename)
+{
+	FILE* file;
+	file = fopen(filename, "r");
+	fseek(file, 0L, SEEK_END);
+
+	int fileSize = ftell(file);
+	rewind(file);
+	return fileSize;
+}
+
 
 
 
