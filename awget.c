@@ -142,6 +142,33 @@ uint32_t getFileLength(FILE * file)
     return fileSize;
 }
 
+char* getFileName(char* url)
+{
+    int urlLength = strlen(url);
+    int i = 0;
+    int lastSlashPosition = 0;
+    char c;
+    for(i; i < urlLength; i++)
+    {
+        if(url[i] == '/')
+        {
+            lastSlashPosition = i;
+        }
+    }
+
+    char* filename = calloc(urlLength - lastSlashPosition, sizeof(char));
+    memcpy(filename, url + lastSlashPosition + 1, urlLength - lastSlashPosition);
+    if(lastSlashPosition == 0)
+    {
+        return "index.html";
+    }
+    else
+    {
+        return filename;
+    }
+}
+
+
 void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file, char* url)
 {
     int sockfd, status, connect_status;
@@ -429,7 +456,7 @@ void sendFileToRandomSS(char * IPAddress, char* portNumber, FILE* file, char* ur
     printf("out of loop\n");
     //fclose(outfileptr);
     printf("Closed file pointer\n");
-    FILE *outfileptr = fopen("outfile.txt", "w");
+    FILE *outfileptr = fopen(getFileName(url), "w");
     fprintf(outfileptr, outBuff);
     printf("%d\n", strlen(outBuff));
     fclose(outfileptr);
@@ -489,11 +516,6 @@ char* getRandomSS(FILE * filename)
     }
 }
 
-void server()
-{
-
-}
-
 int main(int argc, char **argv)
 {
     /*File containing the stepping stones passed in from the user, or frome the chaingaing.txt file*/
@@ -541,7 +563,6 @@ int main(int argc, char **argv)
 
     //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
     sendFileToRandomSS(firstSSIP, firstSSPort, chaingangFile, URL);
-    server();
 
     //printf("File size is %d\n", getFileLength(chaingangFile));
 
