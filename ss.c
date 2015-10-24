@@ -61,7 +61,6 @@ void server(unsigned short port){
 
 	addr_size = sizeof(their_addr);
 	clientfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-	printf("Accepted an incoming connection\n");
 
 	char *rec_buffer = calloc(500, sizeof(char));
 	uint32_t file_length = 1;
@@ -79,7 +78,6 @@ void server(unsigned short port){
 	memset(rec_buffer, 0, strlen(rec_buffer));
 	char *ack = "Ack";
 
-	printf("Received url: %s\n", url);
 
 	/* send ack to add temporary to delay */
 	if(send(clientfd, ack, strlen(ack), 0) < 0) {
@@ -232,12 +230,12 @@ void server(unsigned short port){
 						recv_status = recv(clientfd, tmp_buffer, 500, 0);
 
 						//printf("send in loop iteration %d is:\n", i);
-						char c;
-						int k = 0;
-						for(k = 0; k < sizeOfLastPart + 6; k++)
-						{
-							printf("%c", content[k]);
-						}
+//						char c;
+//						int k = 0;
+//						for(k = 0; k < sizeOfLastPart + 6; k++)
+//						{
+//							printf("%c", content[k]);
+//						}
 
 
 						free(content);
@@ -285,7 +283,6 @@ void server(unsigned short port){
 				}
 			}
 		}
-		printf("Sent %d packets\n", packet_counter);
 
 
 	} else {
@@ -294,11 +291,6 @@ void server(unsigned short port){
 		uint32_t num_406b_packets = outBuff_size / 406;
 		int recv_ack;
 
-		printf("OutBuff size: %u\n", outBuff_size);
-		printf("Number of 406B packets: %u\n", num_406b_packets);
-
-		printf("outbuff at 10 is %c\n", outBuff[10]);
-		printf("outbuff at 500 is %c\n", outBuff[500]);
 		int packet_counter = 0;
 
 
@@ -326,7 +318,6 @@ void server(unsigned short port){
 			recv_ack = recv(clientfd, ack_buffer, 500, 0);
 			packet_counter++;
 		}
-		printf("Sent %d packets\n", packet_counter);
 
 	}
 
@@ -592,7 +583,6 @@ void client(char* next_ss_info, char* url){
 		}
 		counter++;
 	}
-	printf("Client received %d packets from server\n", counter);
 
 
 
@@ -632,7 +622,6 @@ void removeCurrentHost(int num_ss){
 
 
 	fgets(line, 30, ifp);
-	if(DEBUG) printf("Read first line and got %s", line);
 
 	fprintf(ofp, "%d\n", num_ss);
 
@@ -640,7 +629,6 @@ void removeCurrentHost(int num_ss){
 		memcpy(backup_line, line, 30);
 		compIP = parseIP(line);
 		/* Only write to the new file if it's not the current IP address */
-		printf("Compared %s to %s and got %d\n", compIP, ip, strcmp(ip, compIP));
 		if (strcmp(ip, compIP) != 0) {
 			fprintf(ofp, "%s", backup_line);
 		}

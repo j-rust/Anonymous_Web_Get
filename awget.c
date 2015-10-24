@@ -16,7 +16,7 @@
 #include <netdb.h>
 
 
-#define DEBUG 1
+#define DEBUG 0
 
 void help()
 {
@@ -405,7 +405,6 @@ void sendFileToRandomSS(char *IPAddress, char *portNumber, FILE *file, char *url
     while (total_bytes_received < file_length)
     {
         packetCounter++;
-        printf("***************Packet counter is %d\n", packetCounter);
         char *receiverBuffer = (char *) calloc(500, sizeof(char));
         msg_length = 0;
         recv_status = recv(sockfd, receiverBuffer, 500, 0);
