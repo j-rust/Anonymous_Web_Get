@@ -16,7 +16,7 @@
 #include <netdb.h>
 
 
-#define DEBUG 0
+#define DEBUG 1
 
 void help()
 {
@@ -401,8 +401,11 @@ void sendFileToRandomSS(char *IPAddress, char *portNumber, FILE *file, char *url
 
     //FILE *outfileptr = fopen("outfile.txt", "w+");
 
+    int packetCounter = 0;
     while (total_bytes_received < file_length)
     {
+        packetCounter++;
+        printf("***************Packet counter is %d\n", packetCounter);
         char *receiverBuffer = (char *) calloc(500, sizeof(char));
         msg_length = 0;
         recv_status = recv(sockfd, receiverBuffer, 500, 0);
@@ -451,7 +454,8 @@ void sendFileToRandomSS(char *IPAddress, char *portNumber, FILE *file, char *url
     if (DEBUG) printf("out of loop\n");
     //fclose(outfileptr);
     if (DEBUG) printf("Closed file pointer\n");
-    FILE *outfileptr = fopen(getFileName(url), "w");
+    //FILE *outfileptr = fopen(getFileName(url), "w");
+    FILE *outfileptr = fopen("testoutputfile", "w");
     fprintf(outfileptr, outBuff);
     if (DEBUG) printf("%d\n", strlen(outBuff));
     fclose(outfileptr);

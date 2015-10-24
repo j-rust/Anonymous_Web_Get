@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <time.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 char* outBuff = NULL;
 uint32_t outBuff_size = 0;
@@ -144,7 +144,7 @@ void server(unsigned short port){
 		///////////////// check size //////////////
 		if(fileLength < 401)
 		{
-			printf("File length under 400bytes\n");
+			//printf("File length under 400bytes\n");
 			char* content = (char *) calloc(406, sizeof(char));
 
 			uint16_t packetLength = fileLength;
@@ -174,7 +174,7 @@ void server(unsigned short port){
 		else
 		{
 			/*File over 400 bytes*/
-			printf("File length over 400bytes\n");
+			//printf("File length over 400bytes\n");
 
 			/*All parts of file will be 400 bytes*/
 			if(fileLength % 400 == 0)
@@ -192,7 +192,7 @@ void server(unsigned short port){
 				int i = 0;
 				for (i; i <= numberOfParts; i++)
 				{
-					if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
+					//if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
 					char *content;
 					/*Last part of the file.  Could be smaller than 400 bytes*/
 					if (numberOfParts == i)
@@ -228,7 +228,7 @@ void server(unsigned short port){
 
 						recv_status = recv(clientfd, tmp_buffer, 500, 0);
 
-						printf("send in loop iteration %d is:\n", i);
+						//printf("send in loop iteration %d is:\n", i);
 						char c;
 						int k = 0;
 						for(k = 0; k < sizeOfLastPart + 6; k++)
@@ -242,7 +242,7 @@ void server(unsigned short port){
 						/*Middle of file where the parts are still 400 bytes*/
 					else
 					{
-						if(DEBUG) printf("Sending middle parts of file\n");
+						//if(DEBUG) printf("Sending middle parts of file\n");
 						char* content_buffer = calloc(406, sizeof(char));
 						/*Go to right position in file*/
 						fseek(file, i * 400, SEEK_SET);
@@ -274,7 +274,7 @@ void server(unsigned short port){
 
 						recv_status = recv(clientfd, tmp_buffer, 500, 0);
 
-						printf("send in loop iteration %d is:\n", i);
+						//printf("send in loop iteration %d is:\n", i);
 						free(content_buffer);
 
 					}
@@ -292,6 +292,10 @@ void server(unsigned short port){
 		printf("OutBuff size: %u\n", outBuff_size);
 		printf("Number of 406B packets: %u\n", num_406b_packets);
 
+		printf("outbuff at 10 is %c\n", outBuff[10]);
+		printf("outbuff at 500 is %c\n", outBuff[500]);
+
+
 		char *send_buffer = calloc(406, sizeof(char));
 		char *ack_buffer = calloc(500, sizeof(char));
 		int i = 0;
@@ -308,7 +312,7 @@ void server(unsigned short port){
 		if (outBuff_size % 406 > 0) {
 			uint32_t remainder_bytes = outBuff_size % 406;
 			memcpy(send_buffer, outBuff + bytes_sent, remainder_bytes);
-			printf("Sending a remainder packet with size: %u\n", remainder_bytes);
+			//printf("Sending a remainder packet with size: %u\n", remainder_bytes);
 			if(send(clientfd, send_buffer, remainder_bytes, 0) < 0) {
 				printf("Send failed\n");
 			}
@@ -379,7 +383,7 @@ void client(char* next_ss_info, char* url){
 	///////////////// check size //////////////
 	if(fileLength < 401)
 	{
-		printf("File length under 400bytes\n");
+		//printf("File length under 400bytes\n");
 		char* content = (char *) calloc(406, sizeof(char));
 
 		uint16_t packetLength = fileLength;
@@ -409,7 +413,7 @@ void client(char* next_ss_info, char* url){
 	else
 	{
 		/*File over 400 bytes*/
-		printf("File length over 400bytes\n");
+		//printf("File length over 400bytes\n");
 
 		/*All parts of file will be 400 bytes*/
 		if(fileLength % 400 == 0)
@@ -427,12 +431,12 @@ void client(char* next_ss_info, char* url){
 			int i = 0;
 			for (i; i <= numberOfParts; i++)
 			{
-				if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
+				//if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
 				char *content;
 				/*Last part of the file.  Could be smaller than 400 bytes*/
 				if (numberOfParts == i)
 				{
-					if(DEBUG) printf("Sending last part of file\n");
+					//if(DEBUG) printf("Sending last part of file\n");
 					content = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
 					/*Go to right position in file*/
 					fseek(file, i * 400, SEEK_SET);
@@ -463,7 +467,7 @@ void client(char* next_ss_info, char* url){
 
 					recv_status = recv(sockfd, tmp_buffer, 500, 0);
 
-					printf("send in loop iteration %d is:\n", i);
+					//printf("send in loop iteration %d is:\n", i);
 					char c;
 					int k = 0;
 					for(k = 0; k < sizeOfLastPart + 6; k++)
@@ -477,7 +481,7 @@ void client(char* next_ss_info, char* url){
 					/*Middle of file where the parts are still 400 bytes*/
 				else
 				{
-					if(DEBUG) printf("Sending middle parts of file\n");
+					//if(DEBUG) printf("Sending middle parts of file\n");
 					char* content_buffer = calloc(406, sizeof(char));
 					/*Go to right position in file*/
 					fseek(file, i * 400, SEEK_SET);
@@ -498,6 +502,15 @@ void client(char* next_ss_info, char* url){
 						char ch;
 						ch = fgetc(file);
 						content_buffer[6 + j] = ch;
+
+						/******************************************/
+						if(i == 0)
+						{
+							//printf("Char at %d is %c\n", i, ch);
+						}
+						/******************************************/
+
+
 					}
 
 
@@ -509,7 +522,7 @@ void client(char* next_ss_info, char* url){
 
 					recv_status = recv(sockfd, tmp_buffer, 500, 0);
 
-					printf("send in loop iteration %d is:\n", i);
+					//printf("send in loop iteration %d is:\n", i);
 					free(content_buffer);
 
 				}
@@ -522,8 +535,12 @@ void client(char* next_ss_info, char* url){
 	unsigned int msg_length;
 	char *ack = "Ack";
 
+	outBuff = NULL;
+	outBuff_size = 0;
 
+	int counter = 0;
 	while (total_bytes_received < file_length) {
+		printf("total packets sent is %d\n", counter);
 		char* receiverBuffer = (char*) calloc(500, sizeof(char));
 		msg_length = 0;
 		recv_status = recv(sockfd, receiverBuffer, 500, 0);
@@ -538,9 +555,12 @@ void client(char* next_ss_info, char* url){
 		{
 			int total_packets = file_length / 400;
 			if(file_length % 400 > 0) total_packets++;
-			memset(&outBuff_size, 0, sizeof(uint32_t));
+			//memset(&outBuff_size, 0, sizeof(uint32_t));
+			//memset(&outBuff, 0, sizeof(uint32_t));
 			outBuff_size = file_length + (total_packets * 6);
 			outBuff = (char*) calloc(outBuff_size, sizeof(char));
+
+			file_length += file_length + (total_packets * 6);
 		}
 
 
@@ -548,10 +568,17 @@ void client(char* next_ss_info, char* url){
 		printf("Message Length: %zu\n", msg_length);
 		printf("Bytes Received: %d\n", total_bytes_received);
 
+		/*
 		char *data = calloc(msg_length, sizeof(char));
 		memcpy(data, receiverBuffer + 6, msg_length);
 		memcpy(outBuff + total_bytes_received, data, msg_length);
 		total_bytes_received += msg_length;
+		 */
+
+		char *data = calloc(msg_length + 6, sizeof(char));
+		memcpy(data, receiverBuffer, msg_length + 6);
+		memcpy(outBuff + total_bytes_received, data, msg_length + 6);
+		total_bytes_received += msg_length + 6;
 
 		free(data);
 		memset(rec_buffer, 0, 500);
@@ -564,6 +591,7 @@ void client(char* next_ss_info, char* url){
 			}
 
 		}
+		counter++;
 	}
 
 
