@@ -140,6 +140,7 @@ void server(unsigned short port){
 		file = fopen("download_file", "r");
 
 		uint32_t fileLength = getFileLength("download_file");
+		int packet_counter = 0;
 
 		///////////////// check size //////////////
 		if(fileLength < 401)
@@ -168,6 +169,7 @@ void server(unsigned short port){
 				abort();
 			}
 			recv_status = recv(clientfd, tmp_buffer, 500, 0);
+			packet_counter++;
 
 			free(content);
 		}
@@ -225,6 +227,7 @@ void server(unsigned short port){
 							printf("Send failed\n");
 							abort();
 						}
+						packet_counter++;
 
 						recv_status = recv(clientfd, tmp_buffer, 500, 0);
 
@@ -272,6 +275,7 @@ void server(unsigned short port){
 							abort();
 						}
 
+						packet_counter++;
 						recv_status = recv(clientfd, tmp_buffer, 500, 0);
 
 						//printf("send in loop iteration %d is:\n", i);
@@ -281,6 +285,7 @@ void server(unsigned short port){
 				}
 			}
 		}
+		printf("Sent %d packets\n", packet_counter);
 
 
 	} else {
@@ -294,6 +299,7 @@ void server(unsigned short port){
 
 		printf("outbuff at 10 is %c\n", outBuff[10]);
 		printf("outbuff at 500 is %c\n", outBuff[500]);
+		int packet_counter = 0;
 
 
 		char *send_buffer = calloc(406, sizeof(char));
@@ -306,18 +312,21 @@ void server(unsigned short port){
 			}
 			bytes_sent += 406;
 			memset(send_buffer, 0, 406);
+			packet_counter++;
 			recv_ack = recv(clientfd, ack_buffer, 500, 0);
 		}
 
 		if (outBuff_size % 406 > 0) {
 			uint32_t remainder_bytes = outBuff_size % 406;
 			memcpy(send_buffer, outBuff + bytes_sent, remainder_bytes);
-			//printf("Sending a remainder packet with size: %u\n", remainder_bytes);
+//			printf("Sending a remainder packet with size: %u\n", remainder_bytes);
 			if(send(clientfd, send_buffer, remainder_bytes, 0) < 0) {
 				printf("Send failed\n");
 			}
 			recv_ack = recv(clientfd, ack_buffer, 500, 0);
+			packet_counter++;
 		}
+		printf("Sent %d packets\n", packet_counter);
 
 	}
 
@@ -532,6 +541,7 @@ void client(char* next_ss_info, char* url){
 
 	uint32_t total_bytes_received = 0;
 	uint32_t file_length = 1;
+	uint32_t data_received = 0;
 	unsigned int msg_length;
 	char *ack = "Ack";
 
@@ -539,8 +549,7 @@ void client(char* next_ss_info, char* url){
 	outBuff_size = 0;
 
 	int counter = 0;
-	while (total_bytes_received < file_length) {
-		printf("total packets sent is %d\n", counter);
+	while (data_received < file_length) {
 		char* receiverBuffer = (char*) calloc(500, sizeof(char));
 		msg_length = 0;
 		recv_status = recv(sockfd, receiverBuffer, 500, 0);
@@ -564,20 +573,10 @@ void client(char* next_ss_info, char* url){
 		}
 
 
-		printf("File Length: %zu\n", file_length);
-		printf("Message Length: %zu\n", msg_length);
-		printf("Bytes Received: %d\n", total_bytes_received);
-
-		/*
-		char *data = calloc(msg_length, sizeof(char));
-		memcpy(data, receiverBuffer + 6, msg_length);
-		memcpy(outBuff + total_bytes_received, data, msg_length);
-		total_bytes_received += msg_length;
-		 */
-
 		char *data = calloc(msg_length + 6, sizeof(char));
 		memcpy(data, receiverBuffer, msg_length + 6);
 		memcpy(outBuff + total_bytes_received, data, msg_length + 6);
+		data_received += msg_length;
 		total_bytes_received += msg_length + 6;
 
 		free(data);
@@ -593,6 +592,7 @@ void client(char* next_ss_info, char* url){
 		}
 		counter++;
 	}
+	printf("Client received %d packets from server\n", counter);
 
 
 
