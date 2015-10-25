@@ -345,9 +345,9 @@ void server(unsigned short port){
 			}
 
 		}
+		printf("Goodbye!\n");
 
 	}
-	printf("Goodbye!\n");
 }
 
 void client(char* next_ss_info, char* url){
@@ -616,7 +616,7 @@ void client(char* next_ss_info, char* url){
 	}
 
 
-	printf("Goodbye!\n");
+	//printf("Goodbye!\n");
 
 	return;
 }
@@ -766,10 +766,81 @@ uint32_t getFileLength(char * filename)
 }
 
 
+void help()
+{
+	printf("usage: To run ss you can specify a port number to use on the machine with the -p command.  "
+				   "If no argument is given a random port is picked by the OS and used.");
+}
 
+
+char *getPortNumber(int argc, char *argv[])
+{
+	int c;
+	char *portNumber;
+
+	opterr = 0;
+	while ((c = getopt(argc, argv, "p:")) != -1)
+		switch (c)
+		{
+			case 'p':
+				portNumber = optarg;
+				break;
+			case 'h':
+				help();
+				return NULL;
+			case '?':
+				if (optopt == 'c')
+				{
+					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+					help();
+				}
+				else if (isprint(optopt))
+				{
+					fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+					help();
+				}
+				else
+				{
+					fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+					help();
+				}
+				return NULL;
+			default:
+				printf("aborting\n");
+				abort();
+		}
+
+	return portNumber;
+}
+
+
+int checkPortNumber(char* port)
+{
+	int portLength = strlen(port);
+	int i;
+	for (i = 0; i < portLength; i++)
+	{
+		if (isdigit(port[i]) == 0)
+		{
+			return -1;
+		}
+	}
+	return 0;
+}
 
 int main(int argc, char** argv){
-	if(argc > 1) server(atoi(argv[1]));
+	char* portNumber = getPortNumber(argc, argv);
+	if(NULL == portNumber)
+	{
+		return -1;
+	}
+	if(checkPortNumber(portNumber) != 0)
+	{
+		help();
+		return -1;
+	}
+
+	if(argc > 1) server(atoi(portNumber));
 	else server(0);
 	return 0;
 }
