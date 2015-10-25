@@ -93,7 +93,7 @@ void server(unsigned short port){
 		}
 
 
-		FILE *ofp = fopen("chainlist.txt", "w");
+		FILE *ofp = fopen("chainlist.txt", "wb");
 
 		while (total_bytes_received < file_length) {
 			msg_length = 0;
@@ -138,7 +138,7 @@ void server(unsigned short port){
 			char *tmp_buffer = calloc(100, sizeof(char));
 
 			FILE *file;
-			file = fopen("download_file", "r");
+			file = fopen("download_file", "rb");
 
 			uint32_t fileLength = getFileLength("download_file");
 			int packet_counter = 0;
@@ -367,7 +367,7 @@ void client(char* next_ss_info, char* url){
 	char *filename = "chainlist.txt";
 
 	FILE * file;
-	file = fopen(filename, "r");
+	file = fopen(filename, "rb");
 
 	uint32_t fileLength = getFileLength(filename);
 
@@ -716,7 +716,7 @@ char* getRandomSS()
 uint32_t getFileLength(char * filename)
 {
 	FILE* file;
-	file = fopen(filename, "r");
+	file = fopen(filename, "rb");
 	fseek(file, 0L, SEEK_END);
 
 	int fileSize = ftell(file);

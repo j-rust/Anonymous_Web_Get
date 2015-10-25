@@ -454,8 +454,10 @@ void sendFileToRandomSS(char *IPAddress, char *portNumber, FILE *file, char *url
     //fclose(outfileptr);
     if (DEBUG) printf("Closed file pointer\n");
     //FILE *outfileptr = fopen(getFileName(url), "w");
-    FILE *outfileptr = fopen(getFileName(url), "w");
-    fprintf(outfileptr, outBuff);
+    FILE *outfileptr = fopen(getFileName(url), "wb");
+    //fprintf(outfileptr, outBuff);
+    fwrite(outBuff, sizeof(outBuff), file_length, outfileptr);
+    //fwrite(buffer,sizeof(buffer),1,write_ptr); // write 10 bytes to our buffer
     if (DEBUG) printf("%d\n", strlen(outBuff))
                 ;
     fclose(outfileptr);
