@@ -19,6 +19,25 @@ char* outBuff = NULL;
 uint32_t outBuff_size = 0;
 
 
+void printFileContents(FILE *file)
+{
+	char c;
+	int firstLineFlag = 0;
+	while ((c = fgetc(file)) != EOF)
+	{
+		if(firstLineFlag == 1)
+		{
+			printf("%c", c);
+		}
+		if(c == '\n')
+		{
+			firstLineFlag = 1;
+		}
+	}
+	rewind(file);
+	printf("\n");
+}
+
 
 
 void server(unsigned short port){
@@ -52,7 +71,7 @@ void server(unsigned short port){
 	getsockname(sockfd, (struct sockaddr *) &sockin, &socklen);
 
 
-	printf("%s %d\n", getCurrentIP(), ntohs(sockin.sin_port));
+	printf("ss %s %d\n", getCurrentIP(), ntohs(sockin.sin_port));
 
 	addr_size = sizeof(their_addr);
 	while (1) {
@@ -129,11 +148,19 @@ void server(unsigned short port){
 		}
 		fclose(ofp);
 
+
+
 		char *next_ss = getNextSteppingStone();
 		if (next_ss == NULL) {
+			printf("Request: %s\n", url);
+			printf("chainlist is empty\n");
+			printf("issuing wget for file %s\n", url);
 			char cmd_buf[1024];
-			snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -O download_file", url);
+			snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -q -O download_file", url);
 			system(cmd_buf);
+
+			printf("File received\n");
+			printf("Relaying file\n");
 
 			char *tmp_buffer = calloc(100, sizeof(char));
 
@@ -172,6 +199,8 @@ void server(unsigned short port){
 				free(content);
 			}
 			else {
+
+
 				/*File over 400 bytes*/
 				//printf("File length over 400bytes\n");
 
@@ -276,6 +305,12 @@ void server(unsigned short port){
 			system("rm download_file");
 			system("rm chainlist.txt");
 		} else {
+
+			FILE *readFileContentsPointer = fopen("chainlist.txt", "r");
+			printf("Request: %s\n", url);
+			printf("chainlist is\n");
+			printFileContents(readFileContentsPointer);
+			fclose(readFileContentsPointer);
 			client(next_ss, url);
 			uint32_t bytes_sent = 0;
 			uint32_t num_406b_packets = outBuff_size / 406;
@@ -310,8 +345,9 @@ void server(unsigned short port){
 			}
 
 		}
-	}
 
+	}
+	printf("Goodbye!\n");
 }
 
 void client(char* next_ss_info, char* url){
@@ -521,6 +557,10 @@ void client(char* next_ss_info, char* url){
 		}
 	}
 
+	printf("waiting for file...\n");
+
+	printf("Relaying file...\n");
+
 	uint32_t total_bytes_received = 0;
 	uint32_t file_length = 1;
 	uint32_t data_received = 0;
@@ -576,6 +616,7 @@ void client(char* next_ss_info, char* url){
 	}
 
 
+	printf("Goodbye!\n");
 
 	return;
 }

@@ -105,9 +105,17 @@ char *getChainFileName(int argc, char *argv[])
 void printFileContents(FILE *file)
 {
     char c;
+    int firstLineFlag = 0;
     while ((c = fgetc(file)) != EOF)
     {
-        printf("%c", c);
+        if(firstLineFlag == 1)
+        {
+            printf("%c", c);
+        }
+        if(c == '\n')
+        {
+            firstLineFlag = 1;
+        }
     }
     rewind(file);
     printf("\n");
@@ -452,15 +460,20 @@ void sendFileToRandomSS(char *IPAddress, char *portNumber, FILE *file, char *url
     }
     if (DEBUG) printf("out of loop\n");
     //fclose(outfileptr);
-    if (DEBUG) printf("Closed file pointer\n");
     //FILE *outfileptr = fopen(getFileName(url), "w");
     FILE *outfileptr = fopen(getFileName(url), "wb");
+    if (DEBUG) printf("Opened file pointer *******\n");
+    if (DEBUG) printf("File length is %d\n", file_length);
     //fprintf(outfileptr, outBuff);
-    fwrite(outBuff, sizeof(outBuff), file_length, outfileptr);
+    fwrite(outBuff, sizeof(char), file_length - 1, outfileptr);
+    if (DEBUG) printf("Wrote file\n");
     //fwrite(buffer,sizeof(buffer),1,write_ptr); // write 10 bytes to our buffer
-    if (DEBUG) printf("%d\n", strlen(outBuff))
-                ;
+    if (DEBUG) printf("%d\n", strlen(outBuff));
     fclose(outfileptr);
+    if (DEBUG) printf("closed file pointer\n");
+
+    printf("Received file %s\n", getFileName(url));
+    printf("Goodbye!\n");
 
 }
 
@@ -552,6 +565,10 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    printf("Request: %s\n", URL);
+    printf("chainlist is\n");
+    printFileContents(chaingangFile);
+
     if (DEBUG) printFileContents(chaingangFile);
     char *firstSS = getRandomSS(chaingangFile);
     char *tmpLine = calloc(0, strlen(firstSS));
@@ -561,14 +578,14 @@ int main(int argc, char **argv)
     memcpy(tmpLine, firstSS, strlen(firstSS));
     char *firstSSPort = getPort(tmpLine);
 
+    printf("next SS is %s, %s\n", firstSSIP, firstSSPort);
+    printf("waiting for file...\n");
+
     if (DEBUG) printf("%s %s\n", firstSSIP, firstSSPort);
     if (DEBUG) printf("Size of port %zu\n", strlen(firstSSPort));
 
     //sendFileToRandomSS(firstSSIP, atoi(firstSSPort));
     sendFileToRandomSS(firstSSIP, firstSSPort, chaingangFile, URL);
-
-    //printf("File size is %d\n", getFileLength(chaingangFile));
-
 
     return 0;
 }
