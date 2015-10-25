@@ -11,3 +11,5 @@ i.e.:
 >129.82.47.243	35000  
   
 Packet Format: 406 bytes total.  4 bytes for file length, 2 bytes for packet length, up to 400 bytes of data  
+
+For larger size packets it takes a while to pass between each ss, but it does work if given enough time.
