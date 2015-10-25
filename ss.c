@@ -283,8 +283,8 @@ void server(unsigned short port){
 				}
 			}
 		}
-
-
+		system("rm download_file");
+		system("rm chainlist.txt");
 	} else {
 		client(next_ss, url);
 		uint32_t bytes_sent = 0;
@@ -737,8 +737,18 @@ uint32_t getFileLength(char * filename)
 
 
 int main(int argc, char** argv){
-	if(argc > 1) server(atoi(argv[1]));
-	else server(0);
+	int option;
+	int port = 0;
+	while((option = getopt(argc, argv, "p:")) != -1) {
+		switch (option) {
+			case 'p':
+				port = atoi(optarg);
+				break;
+			default:
+				printf("ss can be run as $ss or $ss [-p port]");
+		}
+	}
+	server(port);
 	return 0;
 }
 
