@@ -46,11 +46,6 @@ void server(unsigned short port){
 	}
 
 
-	listen_success = listen(sockfd, 10);
-	if(listen_success == -1){
-		perror("Unable to listen to socket\n");
-		return;
-	}
 
 	struct sockaddr_in sockin;
 	socklen_t socklen = sizeof(sockin);
@@ -62,6 +57,11 @@ void server(unsigned short port){
 	addr_size = sizeof(their_addr);
 	while (1) {
 
+		listen_success = listen(sockfd, 10);
+		if(listen_success == -1){
+			perror("Unable to listen to socket\n");
+			return;
+		}
 
 		clientfd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
 
@@ -728,18 +728,8 @@ uint32_t getFileLength(char * filename)
 
 
 int main(int argc, char** argv){
-	int option;
-	int port = 0;
-	while((option = getopt(argc, argv, "p:")) != -1) {
-		switch (option) {
-			case 'p':
-				port = atoi(optarg);
-				break;
-			default:
-				printf("ss can be run as $ss or $ss [-p port]");
-		}
-	}
-	server(port);
+	if(argc > 1) server(atoi(argv[1]));
+	else server(0);
 	return 0;
 }
 
