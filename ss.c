@@ -60,176 +60,169 @@ void server(unsigned short port){
 	printf("%s %d\n", getCurrentIP(), ntohs(sockin.sin_port));
 
 	addr_size = sizeof(their_addr);
-	clientfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-
-	char *rec_buffer = calloc(500, sizeof(char));
-	uint32_t file_length = 1;
-	uint32_t total_bytes_received = 0;
-
-	int recv_status;
-	unsigned int msg_length;
-
-	/* First packet received is the url */
-	recv_status = recv(clientfd, rec_buffer, 500, 0);
-	memcpy(&msg_length, rec_buffer + 4, 2);
-	msg_length = ntohs(msg_length);
-	char *url = calloc(msg_length, sizeof(char));
-	memcpy(url, rec_buffer + 6, msg_length);
-	memset(rec_buffer, 0, strlen(rec_buffer));
-	char *ack = "Ack";
+	while (1) {
 
 
-	/* send ack to add temporary to delay */
-	if(send(clientfd, ack, strlen(ack), 0) < 0) {
+		clientfd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
+
+		char *rec_buffer = calloc(500, sizeof(char));
+		uint32_t file_length = 1;
+		uint32_t total_bytes_received = 0;
+
+		int recv_status;
+		unsigned int msg_length;
+
+		/* First packet received is the url */
+		recv_status = recv(clientfd, rec_buffer, 500, 0);
+		memcpy(&msg_length, rec_buffer + 4, 2);
+		msg_length = ntohs(msg_length);
+		char *url = calloc(msg_length, sizeof(char));
+		memcpy(url, rec_buffer + 6, msg_length);
+		memset(rec_buffer, 0, strlen(rec_buffer));
+		char *ack = "Ack";
+
+
+		/* send ack to add temporary to delay */
+		if (send(clientfd, ack, strlen(ack), 0) < 0) {
 //		int send_status = send(clientfd, ack, strlen(ack), 0);
 //		while (send_status < 0) {
 //			send_status = send(clientfd, ack, strlen(ack), 0);
 //		}
 
-		printf("Send failed\n");
-	}
-
-
-	FILE *ofp = fopen("chainlist.txt", "w");
-
-	while (total_bytes_received < file_length) {
-		msg_length = 0;
-		recv_status = recv(clientfd, rec_buffer, 500, 0);
-		if (recv_status < 0) { perror("Error: receive failed\n"); }
-
-		memcpy(&file_length, rec_buffer + 0, 4);
-		file_length = ntohl(file_length);
-		memcpy(&msg_length, rec_buffer + 4, 2);
-		msg_length = ntohs(msg_length);
-
-		total_bytes_received += msg_length;
-
-		if(DEBUG) printf("File Length: %zu\n", file_length);
-		if(DEBUG)printf("Message Length: %u\n", msg_length);
-		if(DEBUG)printf("Bytes Received: %d\n", total_bytes_received);
-
-		char *data = calloc(msg_length, sizeof(char));
-		memcpy(data, rec_buffer + 6, msg_length);
-		if(DEBUG)printf("Message is: %s\n", data);
-		fprintf(ofp, data);
-
-		free(data);
-		memset(rec_buffer, 0, 500);
-		/* send ack to add temporary to delay */
-		if(send(clientfd, ack, strlen(ack), 0) < 0) {
-			int send_status = send(clientfd, ack, strlen(ack), 0);
-			while (send_status < 0) {
-				send_status = send(clientfd, ack, strlen(ack), 0);
-			}
-
+			printf("Send failed\n");
 		}
-	}
-	fclose(ofp);
 
-	char* next_ss = getNextSteppingStone();
-	if (next_ss == NULL) {
-		char cmd_buf[1024];
-		snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -O download_file", url);
-		system(cmd_buf);
 
-		char *tmp_buffer = calloc(100, sizeof(char));
+		FILE *ofp = fopen("chainlist.txt", "w");
 
-		FILE * file;
-		file = fopen("download_file", "r");
+		while (total_bytes_received < file_length) {
+			msg_length = 0;
+			recv_status = recv(clientfd, rec_buffer, 500, 0);
+			if (recv_status < 0) { perror("Error: receive failed\n"); }
 
-		uint32_t fileLength = getFileLength("download_file");
-		int packet_counter = 0;
+			memcpy(&file_length, rec_buffer + 0, 4);
+			file_length = ntohl(file_length);
+			memcpy(&msg_length, rec_buffer + 4, 2);
+			msg_length = ntohs(msg_length);
 
-		///////////////// check size //////////////
-		if(fileLength < 401)
-		{
-			//printf("File length under 400bytes\n");
-			char* content = (char *) calloc(406, sizeof(char));
+			total_bytes_received += msg_length;
 
-			uint16_t packetLength = fileLength;
-			uint32_t fileLengthSend = htonl(fileLength);
-			uint16_t packetLengthSend = htons(packetLength);
+			if (DEBUG) printf("File Length: %zu\n", file_length);
+			if (DEBUG)printf("Message Length: %u\n", msg_length);
+			if (DEBUG)printf("Bytes Received: %d\n", total_bytes_received);
 
-			memcpy(content + 0, &fileLengthSend, 4);
-			memcpy(content + 4, &packetLengthSend, 2);
-			char ch;
-			int counter = 0;
+			char *data = calloc(msg_length, sizeof(char));
+			memcpy(data, rec_buffer + 6, msg_length);
+			if (DEBUG)printf("Message is: %s\n", data);
+			fprintf(ofp, data);
 
-			while((ch = fgetc(file) ) != EOF )
-			{
-				content[counter + 6] = ch;
-				counter++;
+			free(data);
+			memset(rec_buffer, 0, 500);
+			/* send ack to add temporary to delay */
+			if (send(clientfd, ack, strlen(ack), 0) < 0) {
+				int send_status = send(clientfd, ack, strlen(ack), 0);
+				while (send_status < 0) {
+					send_status = send(clientfd, ack, strlen(ack), 0);
+				}
+
 			}
-
-			if (send(sockfd, content, 6 + fileLength, 0) < 0)
-			{
-				printf("Send failed\n");
-				abort();
-			}
-			recv_status = recv(clientfd, tmp_buffer, 500, 0);
-			packet_counter++;
-
-			free(content);
 		}
-		else
-		{
-			/*File over 400 bytes*/
-			//printf("File length over 400bytes\n");
+		fclose(ofp);
 
-			/*All parts of file will be 400 bytes*/
-			if(fileLength % 400 == 0)
-			{
+		char *next_ss = getNextSteppingStone();
+		if (next_ss == NULL) {
+			char cmd_buf[1024];
+			snprintf(cmd_buf, sizeof(cmd_buf), "wget %s -O download_file", url);
+			system(cmd_buf);
 
+			char *tmp_buffer = calloc(100, sizeof(char));
+
+			FILE *file;
+			file = fopen("download_file", "r");
+
+			uint32_t fileLength = getFileLength("download_file");
+			int packet_counter = 0;
+
+			///////////////// check size //////////////
+			if (fileLength < 401) {
+				//printf("File length under 400bytes\n");
+				char *content = (char *) calloc(406, sizeof(char));
+
+				uint16_t packetLength = fileLength;
+				uint32_t fileLengthSend = htonl(fileLength);
+				uint16_t packetLengthSend = htons(packetLength);
+
+				memcpy(content + 0, &fileLengthSend, 4);
+				memcpy(content + 4, &packetLengthSend, 2);
+				char ch;
+				int counter = 0;
+
+				while ((ch = fgetc(file)) != EOF) {
+					content[counter + 6] = ch;
+					counter++;
+				}
+
+				if (send(sockfd, content, 6 + fileLength, 0) < 0) {
+					printf("Send failed\n");
+					abort();
+				}
+				recv_status = recv(clientfd, tmp_buffer, 500, 0);
+				packet_counter++;
+
+				free(content);
 			}
-				/*Last part of file will be less than 400 bytes*/
-			else
-			{
-				/*Find out how many times file needs to be split*/
-				int numberOfParts = fileLength / 400;
-				/*Figure out last part of files size*/
-				int sizeOfLastPart = fileLength % 400;
-				/*Loop through the file the number of times it is split*/
-				int i = 0;
-				for (i; i <= numberOfParts; i++)
-				{
-					//if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
-					char *content;
-					/*Last part of the file.  Could be smaller than 400 bytes*/
-					if (numberOfParts == i)
-					{
-						if(DEBUG) printf("Sending last part of file\n");
-						content = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
-						/*Go to right position in file*/
-						fseek(file, i * 400, SEEK_SET);
+			else {
+				/*File over 400 bytes*/
+				//printf("File length over 400bytes\n");
 
-						/*Set variables for packet header*/
-						uint16_t packetLength = 6 + sizeOfLastPart;
-						uint32_t fileLengthSend = htonl(fileLength);
-						uint16_t packetLengthSend = htons(packetLength);
+				/*All parts of file will be 400 bytes*/
+				if (fileLength % 400 == 0) {
 
-						/*Fill buffer with correct information*/
-						memcpy(content + 0, &fileLengthSend, 4);
-						memcpy(content + 4, &packetLengthSend, 2);
+				}
+					/*Last part of file will be less than 400 bytes*/
+				else {
+					/*Find out how many times file needs to be split*/
+					int numberOfParts = fileLength / 400;
+					/*Figure out last part of files size*/
+					int sizeOfLastPart = fileLength % 400;
+					/*Loop through the file the number of times it is split*/
+					int i = 0;
+					for (i; i <= numberOfParts; i++) {
+						//if(DEBUG) printf("In iteration %d of the loop for breaking up packets\n", i);
+						char *content;
+						/*Last part of the file.  Could be smaller than 400 bytes*/
+						if (numberOfParts == i) {
+							if (DEBUG) printf("Sending last part of file\n");
+							content = (char *) calloc(6 + sizeOfLastPart, sizeof(char));
+							/*Go to right position in file*/
+							fseek(file, i * 400, SEEK_SET);
 
-						/*Write chars into buffer*/
-						int j = 0;
-						for(j; j < sizeOfLastPart; j++)
-						{
-							char ch;
-							ch = fgetc(file);
-							content[6 + j] = ch;
-						}
+							/*Set variables for packet header*/
+							uint16_t packetLength = 6 + sizeOfLastPart;
+							uint32_t fileLengthSend = htonl(fileLength);
+							uint16_t packetLengthSend = htons(packetLength);
 
-						if (send(clientfd, content, 6 + sizeOfLastPart, 0) < 0)
-						{
-							printf("Send failed\n");
-							abort();
-						}
-						packet_counter++;
+							/*Fill buffer with correct information*/
+							memcpy(content + 0, &fileLengthSend, 4);
+							memcpy(content + 4, &packetLengthSend, 2);
 
-						recv_status = recv(clientfd, tmp_buffer, 500, 0);
+							/*Write chars into buffer*/
+							int j = 0;
+							for (j; j < sizeOfLastPart; j++) {
+								char ch;
+								ch = fgetc(file);
+								content[6 + j] = ch;
+							}
 
-						//printf("send in loop iteration %d is:\n", i);
+							if (send(clientfd, content, 6 + sizeOfLastPart, 0) < 0) {
+								printf("Send failed\n");
+								abort();
+							}
+							packet_counter++;
+
+							recv_status = recv(clientfd, tmp_buffer, 500, 0);
+
+							//printf("send in loop iteration %d is:\n", i);
 //						char c;
 //						int k = 0;
 //						for(k = 0; k < sizeOfLastPart + 6; k++)
@@ -238,87 +231,85 @@ void server(unsigned short port){
 //						}
 
 
-						free(content);
-					}
-						/*Middle of file where the parts are still 400 bytes*/
-					else
-					{
-						//if(DEBUG) printf("Sending middle parts of file\n");
-						char* content_buffer = calloc(406, sizeof(char));
-						/*Go to right position in file*/
-						fseek(file, i * 400, SEEK_SET);
-
-						/*Set variables for packet header*/
-						uint16_t packetLength = 400;
-						uint32_t fileLengthSend = htonl(fileLength);
-						uint16_t packetLengthSend = htons(packetLength);
-
-						/*Fill buffer with correct information*/
-						memcpy(content_buffer + 0, &fileLengthSend, 4);
-						memcpy(content_buffer + 4, &packetLengthSend, 2);
-
-						/*Write chars into buffer*/
-						int j = 0;
-						for(j; j < 400; j++)
-						{
-							char ch;
-							ch = fgetc(file);
-							content_buffer[6 + j] = ch;
+							free(content);
 						}
+							/*Middle of file where the parts are still 400 bytes*/
+						else {
+							//if(DEBUG) printf("Sending middle parts of file\n");
+							char *content_buffer = calloc(406, sizeof(char));
+							/*Go to right position in file*/
+							fseek(file, i * 400, SEEK_SET);
+
+							/*Set variables for packet header*/
+							uint16_t packetLength = 400;
+							uint32_t fileLengthSend = htonl(fileLength);
+							uint16_t packetLengthSend = htons(packetLength);
+
+							/*Fill buffer with correct information*/
+							memcpy(content_buffer + 0, &fileLengthSend, 4);
+							memcpy(content_buffer + 4, &packetLengthSend, 2);
+
+							/*Write chars into buffer*/
+							int j = 0;
+							for (j; j < 400; j++) {
+								char ch;
+								ch = fgetc(file);
+								content_buffer[6 + j] = ch;
+							}
 
 
-						if (send(clientfd, content_buffer, 406, 0) < 0)
-						{
-							printf("Send failed\n");
-							abort();
+							if (send(clientfd, content_buffer, 406, 0) < 0) {
+								printf("Send failed\n");
+								abort();
+							}
+
+							packet_counter++;
+							recv_status = recv(clientfd, tmp_buffer, 500, 0);
+
+							//printf("send in loop iteration %d is:\n", i);
+							free(content_buffer);
+
 						}
-
-						packet_counter++;
-						recv_status = recv(clientfd, tmp_buffer, 500, 0);
-
-						//printf("send in loop iteration %d is:\n", i);
-						free(content_buffer);
-
 					}
 				}
 			}
-		}
-		system("rm download_file");
-		system("rm chainlist.txt");
-	} else {
-		client(next_ss, url);
-		uint32_t bytes_sent = 0;
-		uint32_t num_406b_packets = outBuff_size / 406;
-		int recv_ack;
+			system("rm download_file");
+			system("rm chainlist.txt");
+		} else {
+			client(next_ss, url);
+			uint32_t bytes_sent = 0;
+			uint32_t num_406b_packets = outBuff_size / 406;
+			int recv_ack;
 
-		int packet_counter = 0;
+			int packet_counter = 0;
 
 
-		char *send_buffer = calloc(406, sizeof(char));
-		char *ack_buffer = calloc(500, sizeof(char));
-		int i = 0;
-		for (i; i < num_406b_packets; i++) {
-			memcpy(send_buffer, outBuff + bytes_sent, 406);
-			if(send(clientfd, send_buffer, 406, 0) < 0) {
-				printf("Send failed\n");
+			char *send_buffer = calloc(406, sizeof(char));
+			char *ack_buffer = calloc(500, sizeof(char));
+			int i = 0;
+			for (i; i < num_406b_packets; i++) {
+				memcpy(send_buffer, outBuff + bytes_sent, 406);
+				if (send(clientfd, send_buffer, 406, 0) < 0) {
+					printf("Send failed\n");
+				}
+				bytes_sent += 406;
+				memset(send_buffer, 0, 406);
+				packet_counter++;
+				recv_ack = recv(clientfd, ack_buffer, 500, 0);
 			}
-			bytes_sent += 406;
-			memset(send_buffer, 0, 406);
-			packet_counter++;
-			recv_ack = recv(clientfd, ack_buffer, 500, 0);
-		}
 
-		if (outBuff_size % 406 > 0) {
-			uint32_t remainder_bytes = outBuff_size % 406;
-			memcpy(send_buffer, outBuff + bytes_sent, remainder_bytes);
+			if (outBuff_size % 406 > 0) {
+				uint32_t remainder_bytes = outBuff_size % 406;
+				memcpy(send_buffer, outBuff + bytes_sent, remainder_bytes);
 //			printf("Sending a remainder packet with size: %u\n", remainder_bytes);
-			if(send(clientfd, send_buffer, remainder_bytes, 0) < 0) {
-				printf("Send failed\n");
+				if (send(clientfd, send_buffer, remainder_bytes, 0) < 0) {
+					printf("Send failed\n");
+				}
+				recv_ack = recv(clientfd, ack_buffer, 500, 0);
+				packet_counter++;
 			}
-			recv_ack = recv(clientfd, ack_buffer, 500, 0);
-			packet_counter++;
-		}
 
+		}
 	}
 
 }
