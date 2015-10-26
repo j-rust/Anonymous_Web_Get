@@ -559,7 +559,7 @@ void client(char* next_ss_info, char* url){
 
 	printf("waiting for file...\n");
 
-	printf("Relaying file...\n");
+
 
 	uint32_t total_bytes_received = 0;
 	uint32_t file_length = 1;
@@ -614,6 +614,8 @@ void client(char* next_ss_info, char* url){
 		}
 		counter++;
 	}
+
+	printf("Relaying file...\n");
 
 
 	//printf("Goodbye!\n");
