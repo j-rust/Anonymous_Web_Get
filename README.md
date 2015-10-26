@@ -2,7 +2,7 @@
 
 Project done by Jonathan Rust and Zach Osman
 
-It is assumed the file containing all possible stepping stones (chainlist.txt) has one host and port per line,
+It is assumed the file containing all possible stepping stones (chaingang.txt) has one host and port per line,
 with the the host and port delimited by one tab character.  
 i.e.:  
   
